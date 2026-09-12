@@ -40,11 +40,15 @@ local function command_failure(result)
   return message
 end
 
-function M.neighbor(direction)
+local function validate_direction(direction)
   if not valid_directions[direction] then
     return nil, "invalid Herdr neighbor direction"
   end
 
+  return direction
+end
+
+local function validate_environment()
   if type(vim) ~= "table" or type(vim.env) ~= "table" or vim.env.HERDR_ENV ~= "1" then
     return nil, "Herdr transport requires Neovim to run inside Herdr"
   end
@@ -54,6 +58,10 @@ function M.neighbor(direction)
     return nil, "Herdr transport requires HERDR_PANE_ID"
   end
 
+  return source_pane_id
+end
+
+local function run_neighbor(source_pane_id, direction)
   if type(vim.system) ~= "function" then
     return nil, "Herdr transport requires Neovim's vim.system API"
   end
@@ -88,11 +96,15 @@ function M.neighbor(direction)
     return nil, command_failure(result)
   end
 
+  return result
+end
+
+local function decode_neighbor(stdout, direction)
   if type(vim.json) ~= "table" or type(vim.json.decode) ~= "function" then
     return nil, "Herdr neighbor lookup requires vim.json.decode"
   end
 
-  local decoded, response = pcall(vim.json.decode, result.stdout or "")
+  local decoded, response = pcall(vim.json.decode, stdout or "")
   if not decoded then
     return nil, "could not decode Herdr neighbor response: " .. tostring(response)
   end
@@ -106,6 +118,26 @@ function M.neighbor(direction)
   end
 
   return destination_pane_id
+end
+
+function M.neighbor(direction)
+  local direction_error
+  direction, direction_error = validate_direction(direction)
+  if not direction then
+    return nil, direction_error
+  end
+
+  local source_pane_id, environment_error = validate_environment()
+  if not source_pane_id then
+    return nil, environment_error
+  end
+
+  local result, command_error = run_neighbor(source_pane_id, direction)
+  if not result then
+    return nil, command_error
+  end
+
+  return decode_neighbor(result.stdout, direction)
 end
 
 return M
