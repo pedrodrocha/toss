@@ -1,5 +1,5 @@
 ---@class TossMappingModule
----@field setup fun(configured: boolean|TossMappings|nil, run: fun(direction: TossDirection, source: TossContextSource): boolean): TossResult<nil>
+---@field setup fun(configured: boolean|TossMappings|nil, run: fun(direction: TossDirection, mode: TossContextMode): boolean): TossResult<nil>
 
 local errors = require("toss.errors")
 local result = require("toss.result")
@@ -13,12 +13,12 @@ local directions = {
 }
 
 local mapping_contexts = {
-  { name = "", source = "file", prefix = "<leader>t", description = "Toss " },
-  { name = "yank_", source = "register", prefix = "<leader>ty", description = "Toss yank " },
+  { name = "", mode = "file", prefix = "<leader>t", description = "Toss " },
+  { name = "yank_", mode = "yank", prefix = "<leader>ty", description = "Toss yank " },
 }
 
 ---@param configured boolean|TossMappings|nil
----@param run fun(direction: TossDirection, source: TossContextSource): boolean
+---@param run fun(direction: TossDirection, mode: TossContextMode): boolean
 ---@return TossResult<nil>
 function M.setup(configured, run)
   if configured == nil or configured == false then
@@ -49,7 +49,7 @@ function M.setup(configured, run)
 
       if type(key) == "string" and key ~= "" then
         local registered, registration_error = pcall(vim.keymap.set, { "n", "x" }, key, function()
-          return run(direction.name, context.source)
+          return run(direction.name, context.mode)
         end, {
           silent = true,
           desc = context.description .. direction.name,

@@ -22,7 +22,9 @@ _G.vim = {
 
 local function with_fake_context(callback)
   local previous_capture = context.capture
-  rawset(context, "capture", function()
+  local captured_mode
+  rawset(context, "capture", function(mode)
+    captured_mode = mode
     return result.ok({
       path = "src/domain/user.lua",
       start_line = nil,
@@ -36,6 +38,8 @@ local function with_fake_context(callback)
   if not ok then
     error(err, 0)
   end
+
+  return captured_mode
 end
 
 local function with_notifications(callback)
@@ -166,7 +170,7 @@ test.describe("toss setup", function()
     test.equal(#calls, 0)
   end)
 
-  test.it("creates file and explicit register mappings when enabled", function()
+  test.it("creates file and explicit yank mappings when enabled", function()
     toss.config = {}
 
     local calls = with_keymaps(function()
@@ -360,6 +364,22 @@ test.describe("toss directions", function()
       test.equal(calls[index].direction, direction)
       test.equal(calls[index].text, "@src/domain/user.lua")
     end
+  end)
+
+  test.it("passes an explicit yank mode through the public API", function()
+    toss.config = {
+      transport = {
+        send = function()
+          return result.ok()
+        end,
+      },
+    }
+
+    local captured_mode = with_fake_context(function()
+      test.equal(toss.left("yank"), true)
+    end)
+
+    test.equal(captured_mode, "yank")
   end)
 
   test.it("notifies unsupported context as a warning and does not send", function()

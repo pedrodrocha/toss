@@ -12,8 +12,8 @@ require("toss").setup({
 ```
 
 Normal mappings toss the current file. Visual mappings toss the selected line
-range. The `<leader>tyh/j/k/l` mappings explicitly toss the tracked unnamed
-register, including file-originated yank, delete, and change ranges.
+range. The `<leader>tyh/j/k/l` mappings explicitly toss the latest yank context,
+including file-originated yank, delete, and change ranges.
 
 ## Tests
 

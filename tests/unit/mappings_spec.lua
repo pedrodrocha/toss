@@ -16,7 +16,9 @@ local function with_vim(fake_vim, callback)
   end
 end
 
-local function run()
+local run_calls = {}
+local function run(direction, mode)
+  run_calls[#run_calls + 1] = { direction = direction, mode = mode }
   return true
 end
 
@@ -39,8 +41,9 @@ test.describe("toss mappings", function()
     test.equal(calls, 0)
   end)
 
-  test.it("registers file and register mappings from one configuration", function()
+  test.it("registers file and yank mappings from one configuration", function()
     local calls = {}
+    run_calls = {}
 
     with_vim({
       keymap = {
@@ -60,14 +63,14 @@ test.describe("toss mappings", function()
     end)
 
     local expected = {
-      { key = "<leader>th", desc = "Toss left" },
-      { key = "<leader>tj", desc = "Toss down" },
-      { key = "<leader>tk", desc = "Toss up" },
-      { key = "<leader>tl", desc = "Toss right" },
-      { key = "<leader>tyh", desc = "Toss yank left" },
-      { key = "<leader>tyj", desc = "Toss yank down" },
-      { key = "<leader>tyk", desc = "Toss yank up" },
-      { key = "<leader>tyl", desc = "Toss yank right" },
+      { key = "<leader>th", direction = "left", mode = "file", desc = "Toss left" },
+      { key = "<leader>tj", direction = "down", mode = "file", desc = "Toss down" },
+      { key = "<leader>tk", direction = "up", mode = "file", desc = "Toss up" },
+      { key = "<leader>tl", direction = "right", mode = "file", desc = "Toss right" },
+      { key = "<leader>tyh", direction = "left", mode = "yank", desc = "Toss yank left" },
+      { key = "<leader>tyj", direction = "down", mode = "yank", desc = "Toss yank down" },
+      { key = "<leader>tyk", direction = "up", mode = "yank", desc = "Toss yank up" },
+      { key = "<leader>tyl", direction = "right", mode = "yank", desc = "Toss yank right" },
     }
 
     test.equal(#calls, #expected)
@@ -77,6 +80,9 @@ test.describe("toss mappings", function()
       test.equal(call.modes[1], "n")
       test.equal(call.modes[2], "x")
       test.truthy(type(call.callback) == "function")
+      call.callback()
+      test.equal(run_calls[index].direction, expected_mapping.direction)
+      test.equal(run_calls[index].mode, expected_mapping.mode)
       test.equal(call.options.silent, true)
       test.equal(call.options.desc, expected_mapping.desc)
     end
@@ -110,7 +116,7 @@ test.describe("toss mappings", function()
     test.equal(calls[3], "<leader>tl")
   end)
 
-  test.it("uses one mapping configuration for both context sources", function()
+  test.it("uses one mapping configuration for both context modes", function()
     local calls = {}
 
     with_vim({

@@ -29,10 +29,10 @@ local which_key = require("toss.which_key")
 ---@class Toss
 ---@field config TossConfig
 ---@field setup fun(opts: TossSetupOptions|nil): Toss
----@field left fun(source: TossContextSource|nil): boolean
----@field down fun(source: TossContextSource|nil): boolean
----@field up fun(source: TossContextSource|nil): boolean
----@field right fun(source: TossContextSource|nil): boolean
+---@field left fun(mode: TossContextMode|nil): boolean
+---@field down fun(mode: TossContextMode|nil): boolean
+---@field up fun(mode: TossContextMode|nil): boolean
+---@field right fun(mode: TossContextMode|nil): boolean
 
 ---@class TossSetupOptions
 ---@field mappings boolean|TossMappings|nil
@@ -60,11 +60,11 @@ local function notify(err)
 end
 
 ---@param direction TossDirection
----@param source TossContextSource|nil
+---@param mode TossContextMode|nil
 ---@return boolean
-local function run(direction, source)
-  source = source or "file"
-  local run_result = runner.run(direction, source, M.config)
+local function run(direction, mode)
+  mode = mode or "file"
+  local run_result = runner.run(direction, mode, M.config)
   if run_result.kind == "err" then
     notify(run_result.error)
   end
@@ -106,28 +106,28 @@ function M.setup(opts)
   return M
 end
 
----@param source TossContextSource|nil
+---@param mode TossContextMode|nil
 ---@return boolean
-function M.left(source)
-  return run("left", source)
+function M.left(mode)
+  return run("left", mode)
 end
 
----@param source TossContextSource|nil
+---@param mode TossContextMode|nil
 ---@return boolean
-function M.down(source)
-  return run("down", source)
+function M.down(mode)
+  return run("down", mode)
 end
 
----@param source TossContextSource|nil
+---@param mode TossContextMode|nil
 ---@return boolean
-function M.up(source)
-  return run("up", source)
+function M.up(mode)
+  return run("up", mode)
 end
 
----@param source TossContextSource|nil
+---@param mode TossContextMode|nil
 ---@return boolean
-function M.right(source)
-  return run("right", source)
+function M.right(mode)
+  return run("right", mode)
 end
 
 return M

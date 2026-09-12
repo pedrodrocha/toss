@@ -8,10 +8,10 @@
 
 ---@alias TossContext TossFileContext|TossTextContext
 
----@alias TossContextSource "file"|"register"
+---@alias TossContextMode "file"|"yank"
 
 ---@class TossContextModule
----@field capture fun(source: TossContextSource|nil): TossResult<TossContext>
+---@field capture fun(mode: TossContextMode|nil): TossResult<TossContext>
 
 local errors = require("toss.errors")
 local register_context = require("toss.context.register")
@@ -99,7 +99,7 @@ local function capture_from_file()
 end
 
 ---@return TossResult<TossContext>
-local function capture_from_register()
+local function capture_from_yank()
   local register_result = register_context.current()
   if register_result.kind == "err" then
     return register_result
@@ -117,11 +117,11 @@ local function capture_from_register()
   return result.ok({ text = register.text })
 end
 
----@param source TossContextSource|nil
+---@param mode TossContextMode|nil
 ---@return TossResult<TossContext>
-function M.capture(source)
-  if source == "register" then
-    return capture_from_register()
+function M.capture(mode)
+  if mode == "yank" then
+    return capture_from_yank()
   end
 
   return capture_from_file()
