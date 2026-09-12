@@ -17,6 +17,15 @@ local function validate_file_path(absolute_path)
   end
 end
 
+local function resolve_path(root, absolute_path)
+  local relative_path = root and vim.fs.relpath(root, absolute_path)
+  if relative_path and relative_path ~= "" then
+    return relative_path
+  end
+
+  return absolute_path
+end
+
 function M.capture()
   local _, err = assert_buffer_is_file()
   if err then
@@ -31,14 +40,9 @@ function M.capture()
   end
 
   local root = project_root.resolve(0)
-  local relative_path = root and vim.fs.relpath(root, absolute_path)
-  local path = relative_path
-  if not path or path == "" then
-    path = absolute_path
-  end
 
   return {
-    path = path,
+    path = resolve_path(root, absolute_path),
     start_line = nil,
     end_line = nil,
   }
