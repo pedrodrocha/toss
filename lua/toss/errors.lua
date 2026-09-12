@@ -28,6 +28,7 @@ M.codes = {
   invalid_transport_result = "invalid_transport_result",
   invalid_result = "invalid_result",
   context_capture = "context_capture_failed",
+  context_mode = "invalid_context_mode",
   formatting = "context_formatting_failed",
   transport_failure = "transport_failed",
   buffer_not_file = "buffer_not_file",
@@ -170,6 +171,14 @@ M.invalid_result = function(operation)
   )
 end
 M.context_capture = constructor(M.codes.context_capture, "context capture failed")
+M.invalid_context_mode = function(mode)
+  return defined(
+    M.codes.context_mode,
+    "context mode must be \"file\" or \"yank\"",
+    "error",
+    mode
+  )
+end
 M.could_not_capture = constructor(M.codes.context_capture, "could not capture context")
 M.context_formatting = constructor(M.codes.formatting, "context formatting failed")
 M.could_not_format = constructor(M.codes.formatting, "could not format context")

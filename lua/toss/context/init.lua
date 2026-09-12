@@ -120,11 +120,15 @@ end
 ---@param mode TossContextMode|nil
 ---@return TossResult<TossContext>
 function M.capture(mode)
+  if mode == nil or mode == "file" then
+    return capture_from_file()
+  end
+
   if mode == "yank" then
     return capture_from_yank()
   end
 
-  return capture_from_file()
+  return result.err(errors.invalid_context_mode(mode))
 end
 
 return M
