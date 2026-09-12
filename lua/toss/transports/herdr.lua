@@ -168,4 +168,9 @@ function M.send(direction, text)
 	return true
 end
 
+function M.available()
+	local source_pane_id = validate_environment()
+	return source_pane_id ~= nil
+end
+
 return M

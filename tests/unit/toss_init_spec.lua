@@ -4,7 +4,7 @@ local test = require("tests.testlib")
 local toss = require("toss")
 local context = require("toss.context")
 local transports = require("toss.transports")
-local herdr = transports.herdr
+local herdr = transports.registry.herdr
 
 local function with_fake_context(callback)
   local previous_capture = context.capture
@@ -42,6 +42,18 @@ local function with_notifications(callback)
   end
 
   return notifications
+end
+
+local function with_vim(fake_vim, callback)
+  local previous_vim = _G.vim
+  _G.vim = fake_vim
+
+  local ok, err = xpcall(callback, debug.traceback)
+  _G.vim = previous_vim
+
+  if not ok then
+    error(err, 0)
+  end
 end
 
 local function with_herdr_send(fake_send, callback)
@@ -98,6 +110,80 @@ test.describe("toss transport configuration", function()
 
     test.equal(#notifications, 1)
     test.equal(notifications[1].message, "toss: unknown transport: tmux")
+  end)
+end)
+
+test.describe("toss automatic transport selection", function()
+  test.it("selects an available registered transport", function()
+    local calls = {}
+    toss.config = {}
+    toss.setup({ transport = "auto" })
+
+    with_vim({
+      env = {
+        HERDR_ENV = "1",
+        HERDR_PANE_ID = "source-pane",
+      },
+    }, function()
+      with_herdr_send(function(direction, text)
+        calls[#calls + 1] = { direction = direction, text = text }
+        return true
+      end, function()
+        with_fake_context(function()
+          test.equal(toss.right(), true)
+        end)
+      end)
+    end)
+
+    test.equal(#calls, 1)
+    test.equal(calls[1].direction, "right")
+    test.equal(calls[1].text, "@src/domain/user.lua")
+  end)
+
+  test.it("fails gracefully when no registered transport is available", function()
+    toss.config = {}
+    toss.setup({ transport = "auto" })
+
+    local notifications = with_notifications(function()
+      test.equal(toss.left(), false)
+    end)
+
+    test.equal(#notifications, 1)
+    test.equal(notifications[1].message, "toss: no transport is available")
+  end)
+
+  test.it("checks registered transports in deterministic order", function()
+    local previous_priorities = transports.priorities
+    local previous_first = transports.registry.first
+    local previous_second = transports.registry.second
+    local checks = {}
+    local first_transport = {
+      available = function()
+        checks[#checks + 1] = "first"
+        return false
+      end,
+    }
+    local second_transport = {
+      available = function()
+        checks[#checks + 1] = "second"
+        return true
+      end,
+    }
+
+    transports.priorities = { "first", "second" }
+    transports.registry.first = first_transport
+    transports.registry.second = second_transport
+
+    local selected, err = transports.resolve("auto")
+
+    transports.priorities = previous_priorities
+    transports.registry.first = previous_first
+    transports.registry.second = previous_second
+
+    test.equal(err, nil)
+    test.equal(selected, second_transport)
+    test.equal(checks[1], "first")
+    test.equal(checks[2], "second")
   end)
 end)
 

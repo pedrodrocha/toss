@@ -62,6 +62,33 @@ local function fake_herdr(options)
   return fake_vim, calls
 end
 
+test.describe("Herdr transport availability", function()
+  test.it("is available inside a Herdr pane", function()
+    with_vim({
+      env = {
+        HERDR_ENV = "1",
+        HERDR_PANE_ID = "source-pane",
+      },
+    }, function()
+      test.equal(herdr.available(), true)
+    end)
+  end)
+
+  test.it("is unavailable without a valid Herdr environment", function()
+    local environments = {
+      {},
+      { HERDR_ENV = "0", HERDR_PANE_ID = "source-pane" },
+      { HERDR_ENV = "1" },
+    }
+
+    for _, env in ipairs(environments) do
+      with_vim({ env = env }, function()
+        test.equal(herdr.available(), false)
+      end)
+    end
+  end)
+end)
+
 test.describe("Herdr transport neighbor lookup", function()
   test.it("rejects a missing Herdr environment", function()
     local system_calls = 0
