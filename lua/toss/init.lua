@@ -6,10 +6,68 @@ local M = {
   config = {},
 }
 
+local mapping_order = { "left", "down", "up", "right" }
+local default_mappings = {
+  left = "<leader>th",
+  down = "<leader>tj",
+  up = "<leader>tk",
+  right = "<leader>tl",
+}
+
 local function notify(message)
   if type(vim) == "table" and type(vim.notify) == "function" then
     local level = vim.log and vim.log.levels and vim.log.levels.INFO or nil
     vim.notify("toss: " .. message, level)
+  end
+end
+
+local function resolve_mappings()
+  local configured = M.config.mappings
+
+  if configured == nil or configured == false then
+    return nil
+  end
+
+  if configured == true then
+    return default_mappings
+  end
+
+  if type(configured) ~= "table" then
+    notify("mappings must be true or a table")
+    return nil
+  end
+
+  local mappings = {}
+  for _, direction in ipairs(mapping_order) do
+    if configured[direction] == nil then
+      mappings[direction] = default_mappings[direction]
+    else
+      mappings[direction] = configured[direction]
+    end
+  end
+
+  return mappings
+end
+
+local function setup_mappings()
+  local mappings = resolve_mappings()
+  if not mappings then
+    return
+  end
+
+  if type(vim) ~= "table" or type(vim.keymap) ~= "table" or type(vim.keymap.set) ~= "function" then
+    notify("keymap API is unavailable")
+    return
+  end
+
+  for _, direction in ipairs(mapping_order) do
+    local key = mappings[direction]
+    if key ~= false and type(key) == "string" and key ~= "" then
+      vim.keymap.set({ "n", "x" }, key, M[direction], {
+        silent = true,
+        desc = "Toss " .. direction,
+      })
+    end
   end
 end
 
@@ -26,6 +84,8 @@ function M.setup(opts)
   for key, value in pairs(opts) do
     M.config[key] = value
   end
+
+  setup_mappings()
 
   return M
 end

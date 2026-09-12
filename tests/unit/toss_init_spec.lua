@@ -56,6 +56,32 @@ local function with_vim(fake_vim, callback)
   end
 end
 
+local function with_keymaps(callback)
+  local previous_vim = _G.vim
+  local calls = {}
+  _G.vim = {
+    keymap = {
+      set = function(modes, key, mapping_callback, options)
+        calls[#calls + 1] = {
+          modes = modes,
+          key = key,
+          callback = mapping_callback,
+          options = options,
+        }
+      end,
+    },
+  }
+
+  local ok, err = xpcall(callback, debug.traceback)
+  _G.vim = previous_vim
+
+  if not ok then
+    error(err, 0)
+  end
+
+  return calls
+end
+
 local function with_herdr_send(fake_send, callback)
   local previous_send = herdr.send
   herdr.send = fake_send
@@ -77,6 +103,57 @@ test.describe("toss setup", function()
 
     test.equal(toss.config.first, true)
     test.equal(toss.config.second, "value")
+  end)
+
+  test.it("does not create mappings unless enabled", function()
+    toss.config = {}
+
+    local calls = with_keymaps(function()
+      toss.setup({})
+    end)
+
+    test.equal(#calls, 0)
+  end)
+
+  test.it("creates normal and visual mappings for each direction", function()
+    toss.config = {}
+
+    local calls = with_keymaps(function()
+      toss.setup({ mappings = true })
+    end)
+
+    local expected = {
+      { key = "<leader>th", direction = "left" },
+      { key = "<leader>tj", direction = "down" },
+      { key = "<leader>tk", direction = "up" },
+      { key = "<leader>tl", direction = "right" },
+    }
+
+    test.equal(#calls, #expected)
+    for index, mapping in ipairs(expected) do
+      test.equal(calls[index].key, mapping.key)
+      test.equal(calls[index].modes[1], "n")
+      test.equal(calls[index].modes[2], "x")
+      test.equal(calls[index].callback, toss[mapping.direction])
+      test.equal(calls[index].options.silent, true)
+    end
+  end)
+
+  test.it("allows direction keys to be overridden", function()
+    toss.config = {}
+
+    local calls = with_keymaps(function()
+      toss.setup({
+        mappings = {
+          left = "<leader>tL",
+        },
+      })
+    end)
+
+    test.equal(calls[1].key, "<leader>tL")
+    test.equal(calls[2].key, "<leader>tj")
+    test.equal(calls[3].key, "<leader>tk")
+    test.equal(calls[4].key, "<leader>tl")
   end)
 end)
 
