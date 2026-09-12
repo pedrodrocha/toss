@@ -1,1 +1,19 @@
-# toss
+# toss.nvim
+
+A tiny Neovim plugin for tossing editor context into an adjacent terminal pane.
+
+## Tests
+
+Run the unit and headless Neovim integration tests with:
+
+```sh
+./tests/run.sh
+```
+
+The test harness uses the system Lua and Neovim executables by default. Override them when needed:
+
+```sh
+LUA_BIN=luajit NVIM_BIN=/path/to/nvim ./tests/run.sh
+```
+
+The tests do not require Herdr, Ghostty, network access, or an AI coding agent.
