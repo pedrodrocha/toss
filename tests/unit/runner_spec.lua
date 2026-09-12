@@ -218,20 +218,21 @@ test.describe("toss runner", function()
     end)
   end)
 
-  test.it("resolves and validates configured transports", function()
-    local transport = { send = function() end }
+  test.it("returns transport configuration failures without capturing context", function()
+    local capture_calls = 0
 
-    local resolved = runner.resolve_transport({ transport = transport })
-    test.equal(resolved.kind, "ok")
-    test.equal(resolved.value, transport)
+    with_stubs({
+      capture = function()
+        capture_calls = capture_calls + 1
+        return result.ok({ path = "src/file.lua" })
+      end,
+    }, function()
+      local run_result = runner.run("right", nil, {})
 
-    resolved = runner.resolve_transport({})
-    test.equal(errors.message(assert_failure(resolved)), "transport is not configured")
+      test.equal(errors.message(assert_failure(run_result)), "transport is not configured")
+    end)
 
-    ---@type any
-    local invalid_transport = {}
-    resolved = runner.resolve_transport({ transport = invalid_transport })
-    test.equal(errors.message(assert_failure(resolved)), "transport must provide send(direction, text)")
+    test.equal(capture_calls, 0)
   end)
 end)
 

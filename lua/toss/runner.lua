@@ -5,7 +5,6 @@ local result = require("toss.result")
 local transports = require("toss.transports")
 
 ---@class TossRunner
----@field resolve_transport fun(config: TossConfig|nil): TossResult<TossTransport>
 ---@field run fun(direction: TossDirection, source: TossContextSource|nil, config: TossConfig|nil): TossResult<nil>
 
 local M = {}
@@ -37,12 +36,6 @@ local function resolve_transport(config)
   end
 
   return result.ok(configured)
-end
-
----@param config TossConfig|nil
----@return TossResult<TossTransport>
-function M.resolve_transport(config)
-  return resolve_transport(config)
 end
 
 ---@param direction TossDirection
