@@ -17,7 +17,7 @@ local transport = {
 }
 
 toss.config = {}
-toss.setup({ transport = transport, yank_mappings = true })
+toss.setup({ transport = transport, mappings = true })
 
 local function edit_fixture()
   vim.cmd("edit! " .. vim.fn.fnameescape(fixture_path))
@@ -44,8 +44,8 @@ end
 
 test.describe("tracked unnamed register context", function()
   test.it("installs one TextYankPost observer across repeated setup", function()
-    toss.setup({ transport = transport, yank_mappings = true })
-    toss.setup({ transport = transport, yank_mappings = true })
+    toss.setup({ transport = transport, mappings = true })
+    toss.setup({ transport = transport, mappings = true })
 
     local autocmds = vim.api.nvim_get_autocmds({
       group = "TossRegisterContext",

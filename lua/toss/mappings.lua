@@ -1,5 +1,5 @@
 ---@class TossMappingModule
----@field setup fun(configured: boolean|TossMappings|nil, callbacks: table<TossDirection, fun(): boolean>, yank_configured: boolean|TossMappings|nil, yank_callbacks: table<TossDirection, fun(): boolean>): TossResult<nil>
+---@field setup fun(configured: boolean|TossMappings|nil, callbacks: table<TossDirection, fun(): boolean>, yank_callbacks: table<TossDirection, fun(): boolean>): TossResult<nil>
 
 local errors = require("toss.errors")
 local result = require("toss.result")
@@ -59,16 +59,24 @@ end
 
 ---@param configured boolean|TossMappings|nil
 ---@param callbacks table<TossDirection, fun(): boolean>
----@param yank_configured boolean|TossMappings|nil
 ---@param yank_callbacks table<TossDirection, fun(): boolean>|nil
 ---@return TossResult<nil>
-function M.setup(configured, callbacks, yank_configured, yank_callbacks)
+function M.setup(configured, callbacks, yank_callbacks)
   local normal_result = register_mappings(configured, callbacks, "<leader>t", "Toss ")
   if normal_result.kind == "err" then
     return normal_result
   end
 
-  return register_mappings(yank_configured, yank_callbacks or {}, "<leader>ty", "Toss yank ")
+  if configured == nil or configured == false or yank_callbacks == nil then
+    return result.ok()
+  end
+
+  local yank_configured = true
+  if type(configured) == "table" and configured.yank ~= nil then
+    yank_configured = configured.yank
+  end
+
+  return register_mappings(yank_configured, yank_callbacks, "<leader>ty", "Toss yank ")
 end
 
 return M

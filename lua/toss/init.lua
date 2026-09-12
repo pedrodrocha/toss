@@ -11,6 +11,7 @@ local which_key = require("toss.which_key")
 ---@field down string|false|nil
 ---@field up string|false|nil
 ---@field right string|false|nil
+---@field yank boolean|table|nil
 
 ---@class TossTransport
 ---@field send fun(direction: TossDirection, text: string): TossResult<nil>
@@ -18,7 +19,6 @@ local which_key = require("toss.which_key")
 
 ---@class TossConfig
 ---@field mappings boolean|TossMappings|nil
----@field yank_mappings boolean|TossMappings|nil
 ---@field which_key boolean|nil
 ---@field transport string|TossTransport|nil
 ---@field [string] any
@@ -33,7 +33,6 @@ local which_key = require("toss.which_key")
 
 ---@class TossSetupOptions
 ---@field mappings boolean|TossMappings|nil
----@field yank_mappings boolean|TossMappings|nil
 ---@field which_key boolean|nil
 ---@field transport string|TossTransport|nil
 
@@ -107,7 +106,7 @@ function M.setup(opts)
     notify(register_result.error)
   end
 
-  local mappings_result = mappings.setup(M.config.mappings, M, M.config.yank_mappings, yank_callbacks())
+  local mappings_result = mappings.setup(M.config.mappings, M, yank_callbacks())
   if mappings_result.kind == "err" then
     notify(mappings_result.error)
   end

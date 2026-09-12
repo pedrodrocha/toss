@@ -17,9 +17,9 @@ package.path = table.concat({
 }, ";")
 
 local toss = require("toss")
-toss.setup({ transport = "auto", mappings = true, yank_mappings = true, which_key = true })
+toss.setup({ transport = "auto", mappings = true, which_key = true })
 
 vim.notify(
-  "toss: development source loaded from " .. repository_root .. " (transport: auto, yank mappings, which-key: optional)",
+  "toss: development source loaded from " .. repository_root .. " (transport: auto, mappings, which-key: optional)",
   vim.log.levels.INFO
 )

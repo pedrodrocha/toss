@@ -166,7 +166,7 @@ test.describe("toss setup", function()
     test.equal(#calls, 0)
   end)
 
-  test.it("creates normal and visual mappings for each direction", function()
+  test.it("creates file and explicit register mappings when enabled", function()
     toss.config = {}
 
     local calls = with_keymaps(function()
@@ -174,10 +174,14 @@ test.describe("toss setup", function()
     end)
 
     local expected = {
-      { key = "<leader>th", direction = "left" },
-      { key = "<leader>tj", direction = "down" },
-      { key = "<leader>tk", direction = "up" },
-      { key = "<leader>tl", direction = "right" },
+      { key = "<leader>th", direction = "left", desc = "Toss left" },
+      { key = "<leader>tj", direction = "down", desc = "Toss down" },
+      { key = "<leader>tk", direction = "up", desc = "Toss up" },
+      { key = "<leader>tl", direction = "right", desc = "Toss right" },
+      { key = "<leader>tyh", desc = "Toss yank left" },
+      { key = "<leader>tyj", desc = "Toss yank down" },
+      { key = "<leader>tyk", desc = "Toss yank up" },
+      { key = "<leader>tyl", desc = "Toss yank right" },
     }
 
     test.equal(#calls, #expected)
@@ -185,32 +189,13 @@ test.describe("toss setup", function()
       test.equal(calls[index].key, mapping.key)
       test.equal(calls[index].modes[1], "n")
       test.equal(calls[index].modes[2], "x")
-      test.equal(calls[index].callback, toss[mapping.direction])
       test.equal(calls[index].options.silent, true)
-    end
-  end)
-
-  test.it("creates explicit yank mappings when enabled", function()
-    toss.config = {}
-
-    local calls = with_keymaps(function()
-      toss.setup({ yank_mappings = true })
-    end)
-
-    local expected = {
-      { key = "<leader>tyh", direction = "left" },
-      { key = "<leader>tyj", direction = "down" },
-      { key = "<leader>tyk", direction = "up" },
-      { key = "<leader>tyl", direction = "right" },
-    }
-
-    test.equal(#calls, #expected)
-    for index, mapping in ipairs(expected) do
-      test.equal(calls[index].key, mapping.key)
-      test.equal(calls[index].modes[1], "n")
-      test.equal(calls[index].modes[2], "x")
-      test.truthy(type(calls[index].callback) == "function")
-      test.equal(calls[index].options.silent, true)
+      test.equal(calls[index].options.desc, mapping.desc)
+      if mapping.direction ~= nil then
+        test.equal(calls[index].callback, toss[mapping.direction])
+      else
+        test.truthy(type(calls[index].callback) == "function")
+      end
     end
   end)
 
