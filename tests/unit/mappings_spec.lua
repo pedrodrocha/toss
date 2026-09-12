@@ -102,6 +102,49 @@ test.describe("toss mappings", function()
     test.equal(calls[3], "<leader>tl")
   end)
 
+  test.it("registers explicit yank mappings independently", function()
+    local calls = {}
+    local yank_callbacks = {
+      left = function() end,
+      down = function() end,
+      up = function() end,
+      right = function() end,
+    }
+
+    with_vim({
+      keymap = {
+        set = function(modes, key, callback, options)
+          calls[#calls + 1] = {
+            modes = modes,
+            key = key,
+            callback = callback,
+            options = options,
+          }
+        end,
+      },
+    }, function()
+      local setup_result = mappings.setup(false, callbacks, true, yank_callbacks)
+
+      test.equal(setup_result.kind, "ok")
+    end)
+
+    local expected = {
+      { key = "<leader>tyh", callback = yank_callbacks.left },
+      { key = "<leader>tyj", callback = yank_callbacks.down },
+      { key = "<leader>tyk", callback = yank_callbacks.up },
+      { key = "<leader>tyl", callback = yank_callbacks.right },
+    }
+
+    test.equal(#calls, #expected)
+    for index, expected_mapping in ipairs(expected) do
+      test.equal(calls[index].key, expected_mapping.key)
+      test.equal(calls[index].callback, expected_mapping.callback)
+      test.equal(calls[index].modes[1], "n")
+      test.equal(calls[index].modes[2], "x")
+      test.equal(calls[index].options.desc, "Toss yank " .. ({ "left", "down", "up", "right" })[index])
+    end
+  end)
+
   test.it("returns configuration and API errors without notifying", function()
     ---@type any
     local invalid_configuration = "enabled"

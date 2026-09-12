@@ -1,6 +1,7 @@
 ---@class TossMappingModule
 ---@field resolve fun(configured: boolean|TossMappings|nil): TossResult<TossMappings|nil>
----@field setup fun(configured: boolean|TossMappings|nil, callbacks: table<TossDirection, fun(): boolean>): TossResult<nil>
+---@field resolve_yank fun(configured: boolean|TossMappings|nil): TossResult<TossMappings|nil>
+---@field setup fun(configured: boolean|TossMappings|nil, callbacks: table<TossDirection, fun(): boolean>, yank_configured: boolean|TossMappings|nil, yank_callbacks: table<TossDirection, fun(): boolean>): TossResult<nil>
 
 local errors = require("toss.errors")
 local result = require("toss.result")
@@ -13,16 +14,23 @@ local default_mappings = {
   up = "<leader>tk",
   right = "<leader>tl",
 }
+local default_yank_mappings = {
+  left = "<leader>tyh",
+  down = "<leader>tyj",
+  up = "<leader>tyk",
+  right = "<leader>tyl",
+}
 
 ---@param configured boolean|TossMappings|nil
+---@param defaults TossMappings
 ---@return TossResult<TossMappings|nil>
-function M.resolve(configured)
+local function resolve_mappings(configured, defaults)
   if configured == nil or configured == false then
     return result.ok()
   end
 
   if configured == true then
-    return result.ok(default_mappings)
+    return result.ok(defaults)
   end
 
   if type(configured) ~= "table" then
@@ -32,7 +40,7 @@ function M.resolve(configured)
   local mappings = {}
   for _, direction in ipairs(mapping_order) do
     if configured[direction] == nil then
-      mappings[direction] = default_mappings[direction]
+      mappings[direction] = defaults[direction]
     else
       mappings[direction] = configured[direction]
     end
@@ -42,15 +50,22 @@ function M.resolve(configured)
 end
 
 ---@param configured boolean|TossMappings|nil
----@param callbacks table<TossDirection, fun(): boolean>
----@return TossResult<nil>
-function M.setup(configured, callbacks)
-  local resolved = M.resolve(configured)
-  if resolved.kind == "err" then
-    return resolved
-  end
+---@return TossResult<TossMappings|nil>
+function M.resolve(configured)
+  return resolve_mappings(configured, default_mappings)
+end
 
-  local mappings = resolved.value
+---@param configured boolean|TossMappings|nil
+---@return TossResult<TossMappings|nil>
+function M.resolve_yank(configured)
+  return resolve_mappings(configured, default_yank_mappings)
+end
+
+---@param mappings TossMappings|nil
+---@param callbacks table<TossDirection, fun(): boolean>
+---@param description_prefix string
+---@return TossResult<nil>
+local function register_mappings(mappings, callbacks, description_prefix)
   if mappings == nil then
     return result.ok()
   end
@@ -68,7 +83,7 @@ function M.setup(configured, callbacks)
     if type(key) == "string" and key ~= "" then
       local registered, registration_error = pcall(vim.keymap.set, { "n", "x" }, key, callbacks[direction], {
         silent = true,
-        desc = "Toss " .. direction,
+        desc = description_prefix .. direction,
       })
       if not registered then
         return result.err(errors.mapping_registration(direction, registration_error))
@@ -77,6 +92,30 @@ function M.setup(configured, callbacks)
   end
 
   return result.ok()
+end
+
+---@param configured boolean|TossMappings|nil
+---@param callbacks table<TossDirection, fun(): boolean>
+---@param yank_configured boolean|TossMappings|nil
+---@param yank_callbacks table<TossDirection, fun(): boolean>|nil
+---@return TossResult<nil>
+function M.setup(configured, callbacks, yank_configured, yank_callbacks)
+  local resolved = M.resolve(configured)
+  if resolved.kind == "err" then
+    return resolved
+  end
+
+  local normal_result = register_mappings(resolved.value, callbacks, "Toss ")
+  if normal_result.kind == "err" then
+    return normal_result
+  end
+
+  local resolved_yank = M.resolve_yank(yank_configured)
+  if resolved_yank.kind == "err" then
+    return resolved_yank
+  end
+
+  return register_mappings(resolved_yank.value, yank_callbacks or {}, "Toss yank ")
 end
 
 return M

@@ -162,6 +162,30 @@ test.describe("toss setup", function()
     end
   end)
 
+  test.it("creates explicit yank mappings when enabled", function()
+    toss.config = {}
+
+    local calls = with_keymaps(function()
+      toss.setup({ yank_mappings = true })
+    end)
+
+    local expected = {
+      { key = "<leader>tyh", direction = "left" },
+      { key = "<leader>tyj", direction = "down" },
+      { key = "<leader>tyk", direction = "up" },
+      { key = "<leader>tyl", direction = "right" },
+    }
+
+    test.equal(#calls, #expected)
+    for index, mapping in ipairs(expected) do
+      test.equal(calls[index].key, mapping.key)
+      test.equal(calls[index].modes[1], "n")
+      test.equal(calls[index].modes[2], "x")
+      test.truthy(type(calls[index].callback) == "function")
+      test.equal(calls[index].options.silent, true)
+    end
+  end)
+
   test.it("notifies when mapping setup fails", function()
     toss.config = {}
 

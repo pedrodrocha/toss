@@ -24,6 +24,14 @@ function M.format(ctx)
     return invalid(errors.invalid_context())
   end
 
+  if ctx.path == nil then
+    if type(ctx.text) ~= "string" or ctx.text == "" then
+      return invalid(errors.invalid_context_text())
+    end
+
+    return result.ok(ctx.text)
+  end
+
   if type(ctx.path) ~= "string" or ctx.path == "" then
     return invalid(errors.invalid_context_path())
   end

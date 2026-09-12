@@ -35,6 +35,10 @@ M.codes = {
   invalid_context = "invalid_context",
   context_range = "invalid_context_range",
   context_path = "invalid_context_path",
+  context_text = "invalid_context_text",
+  register_setup = "register_setup_failed",
+  register_unavailable = "register_api_unavailable",
+  register_read = "register_read_failed",
   herdr_environment = "herdr_environment_unavailable",
   herdr_pane = "herdr_pane_unavailable",
   herdr_direction = "invalid_herdr_direction",
@@ -175,6 +179,14 @@ M.buffer_not_file = constructor(M.codes.buffer_not_file, "current buffer is not 
 M.buffer_without_path = constructor(M.codes.buffer_without_path, "current buffer has no file path", "warn")
 M.invalid_context = constructor(M.codes.invalid_context, "context must be a table")
 M.invalid_context_path = constructor(M.codes.context_path, "context path must be a non-empty string")
+M.invalid_context_text = constructor(M.codes.context_text, "context text must be a non-empty string")
+M.register_setup = function(message, detail)
+  return defined(M.codes.register_setup, message, "error", detail)
+end
+M.register_unavailable = constructor(M.codes.register_unavailable, "unnamed register API is unavailable")
+M.register_read = function(message, detail)
+  return defined(M.codes.register_read, message, "error", detail)
+end
 M.context_range = function(message)
   return defined(M.codes.context_range, message, "error")
 end

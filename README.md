@@ -2,6 +2,20 @@
 
 A tiny Neovim plugin for tossing editor context into an adjacent terminal pane.
 
+## Usage
+
+```lua
+require("toss").setup({
+  transport = "auto",
+  mappings = true,
+  yank_mappings = true,
+})
+```
+
+Normal mappings toss the current file. Visual mappings toss the selected line
+range. The optional `<leader>tyh/j/k/l` mappings explicitly toss the tracked
+unnamed register, including file-originated yank, delete, and change ranges.
+
 ## Tests
 
 Run the unit and headless Neovim integration tests with:

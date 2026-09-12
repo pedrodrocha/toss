@@ -33,6 +33,32 @@ local function assert_failure(outcome)
 end
 
 test.describe("toss runner", function()
+  test.it("passes the requested context source through capture", function()
+    local captured_source
+
+    with_stubs({
+      capture = function(source)
+        captured_source = source
+        return result.ok({ path = "src/file.lua" })
+      end,
+      format = function()
+        return result.ok("@src/file.lua")
+      end,
+    }, function()
+      local run_result = runner.run("right", {
+        transport = {
+          send = function()
+            return result.ok()
+          end,
+        },
+      }, "register")
+
+      test.equal(run_result.kind, "ok")
+    end)
+
+    test.equal(captured_source, "register")
+  end)
+
   test.it("runs capture, formatting, and transport in order", function()
     local calls = {}
     local context_value = { path = "src/file.lua" }

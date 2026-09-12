@@ -6,7 +6,7 @@ local transports = require("toss.transports")
 
 ---@class TossRunner
 ---@field resolve_transport fun(config: TossConfig|nil): TossResult<TossTransport>
----@field run fun(direction: TossDirection, config: TossConfig|nil): TossResult<nil>
+---@field run fun(direction: TossDirection, config: TossConfig|nil, source: TossContextSource|nil): TossResult<nil>
 
 local M = {}
 
@@ -47,8 +47,9 @@ end
 
 ---@param direction TossDirection
 ---@param config TossConfig|nil
+---@param source TossContextSource|nil
 ---@return TossResult<nil>
-function M.run(direction, config)
+local function run_with_capture(direction, config, source)
   local resolve_ok, transport_result = pcall(resolve_transport, config)
   if not resolve_ok then
     return result.err(errors.transport_resolution(transport_result))
@@ -63,7 +64,7 @@ function M.run(direction, config)
   end
 
   local transport = transport_result.value
-  local capture_ok, capture_result = pcall(context.capture)
+  local capture_ok, capture_result = pcall(context.capture, source)
   if not capture_ok then
     return result.err(errors.context_capture(capture_result))
   end
@@ -105,6 +106,13 @@ function M.run(direction, config)
   end
 
   return result.ok()
+end
+
+---@param direction TossDirection
+---@param config TossConfig|nil
+---@return TossResult<nil>
+function M.run(direction, config, source)
+  return run_with_capture(direction, config, source)
 end
 
 return M
