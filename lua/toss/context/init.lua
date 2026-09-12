@@ -36,12 +36,13 @@ function M.capture()
   end
 
   local relative_path = vim.fs.relpath(root, absolute_path)
-  if not relative_path or relative_path == "" then
-    return invalid("current file is outside the project root")
+  local path = relative_path
+  if not path or path == "" then
+    path = absolute_path
   end
 
   return {
-    path = relative_path,
+    path = path,
     start_line = nil,
     end_line = nil,
   }

@@ -92,9 +92,15 @@ test.describe("context capture", function()
     assert_failure("not a file")
   end)
 
-  test.it("rejects a file outside the project root", function()
+  test.it("uses an absolute path for a file outside the project root", function()
     edit(outside_path)
-    assert_failure("outside the project root")
+
+    local value, err = context.capture()
+
+    test.equal(err, nil)
+    test.equal(value.path, outside_path)
+    test.equal(value.start_line, nil)
+    test.equal(value.end_line, nil)
   end)
 end)
 
