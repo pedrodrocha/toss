@@ -204,16 +204,6 @@ end
 
 ---@return TossResult<nil>
 function M.setup()
-  if type(vim) ~= "table" or type(vim.api) ~= "table" then
-    -- This keeps the module loadable by the Lua-only unit tests. Neovim will
-    -- always provide the APIs below when the plugin is actually set up.
-    return result.ok()
-  end
-
-  if type(vim.api.nvim_create_augroup) ~= "function" or type(vim.api.nvim_create_autocmd) ~= "function" then
-    return result.err(errors.register_setup("Neovim autocmd API is unavailable"))
-  end
-
   local created, group = pcall(vim.api.nvim_create_augroup, autocmd_group, { clear = true })
   if not created then
     return result.err(errors.register_setup("could not create TextYankPost autocmd group", group))

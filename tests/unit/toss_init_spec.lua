@@ -8,6 +8,18 @@ local context = require("toss.context")
 local transports = require("toss.transports")
 local herdr = transports.registry.herdr
 
+-- Unit tests provide only the Neovim APIs used by toss.setup().
+_G.vim = {
+  api = {
+    nvim_create_augroup = function()
+      return 1
+    end,
+    nvim_create_autocmd = function()
+      return 1
+    end,
+  },
+}
+
 local function with_fake_context(callback)
   local previous_capture = context.capture
   rawset(context, "capture", function()
@@ -30,6 +42,14 @@ local function with_notifications(callback)
   local previous_vim = _G.vim
   local notifications = {}
   _G.vim = {
+    api = {
+      nvim_create_augroup = function()
+        return 1
+      end,
+      nvim_create_autocmd = function()
+        return 1
+      end,
+    },
     log = { levels = { WARN = "warn", ERROR = "error" } },
     notify = function(message, level)
       notifications[#notifications + 1] = { message = message, level = level }
@@ -62,6 +82,14 @@ local function with_keymaps(callback)
   local previous_vim = _G.vim
   local calls = {}
   _G.vim = {
+    api = {
+      nvim_create_augroup = function()
+        return 1
+      end,
+      nvim_create_autocmd = function()
+        return 1
+      end,
+    },
     keymap = {
       set = function(modes, key, mapping_callback, options)
         calls[#calls + 1] = {
