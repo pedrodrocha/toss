@@ -33,6 +33,32 @@ local function assert_failure(outcome)
 end
 
 test.describe("toss runner", function()
+  test.it("passes the requested context mode through capture", function()
+    local captured_mode
+
+    with_stubs({
+      capture = function(mode)
+        captured_mode = mode
+        return result.ok({ path = "src/file.lua" })
+      end,
+      format = function()
+        return result.ok("@src/file.lua")
+      end,
+    }, function()
+      local run_result = runner.run("right", "yank", {
+        transport = {
+          send = function()
+            return result.ok()
+          end,
+        },
+      })
+
+      test.equal(run_result.kind, "ok")
+    end)
+
+    test.equal(captured_mode, "yank")
+  end)
+
   test.it("runs capture, formatting, and transport in order", function()
     local calls = {}
     local context_value = { path = "src/file.lua" }
@@ -53,7 +79,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("right", { transport = transport })
+      local run_result = runner.run("right", nil, { transport = transport })
 
       test.equal(run_result.kind, "ok")
     end)
@@ -85,7 +111,7 @@ test.describe("toss runner", function()
         return result.ok("should not be sent")
       end,
     }, function()
-      local run_result = runner.run("left", { transport = transport })
+      local run_result = runner.run("left", nil, { transport = transport })
 
       test.equal(errors.message(assert_failure(run_result)), "current buffer is not a file")
     end)
@@ -107,7 +133,7 @@ test.describe("toss runner", function()
         return result.err(formatter_error)
       end,
     }, function()
-      local run_result = runner.run("up", {
+      local run_result = runner.run("up", nil, {
         transport = {
           send = function()
             send_calls = send_calls + 1
@@ -129,7 +155,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("up", {
+      local run_result = runner.run("up", nil, {
         transport = {
           send = function()
             return result.err(transport_error)
@@ -152,7 +178,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("right", {
+      local run_result = runner.run("right", nil, {
         transport = {
           send = function()
             send_calls = send_calls + 1
@@ -178,7 +204,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("right", {
+      local run_result = runner.run("right", nil, {
         transport = {
           send = function()
             error("send exploded")
@@ -192,20 +218,21 @@ test.describe("toss runner", function()
     end)
   end)
 
-  test.it("resolves and validates configured transports", function()
-    local transport = { send = function() end }
+  test.it("returns transport configuration failures without capturing context", function()
+    local capture_calls = 0
 
-    local resolved = runner.resolve_transport({ transport = transport })
-    test.equal(resolved.kind, "ok")
-    test.equal(resolved.value, transport)
+    with_stubs({
+      capture = function()
+        capture_calls = capture_calls + 1
+        return result.ok({ path = "src/file.lua" })
+      end,
+    }, function()
+      local run_result = runner.run("right", nil, {})
 
-    resolved = runner.resolve_transport({})
-    test.equal(errors.message(assert_failure(resolved)), "transport is not configured")
+      test.equal(errors.message(assert_failure(run_result)), "transport is not configured")
+    end)
 
-    ---@type any
-    local invalid_transport = {}
-    resolved = runner.resolve_transport({ transport = invalid_transport })
-    test.equal(errors.message(assert_failure(resolved)), "transport must provide send(direction, text)")
+    test.equal(capture_calls, 0)
   end)
 end)
 

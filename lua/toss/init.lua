@@ -1,3 +1,4 @@
+local context_register = require("toss.context.register")
 local errors = require("toss.errors")
 local mappings = require("toss.mappings")
 local runner = require("toss.runner")
@@ -10,6 +11,10 @@ local which_key = require("toss.which_key")
 ---@field down string|false|nil
 ---@field up string|false|nil
 ---@field right string|false|nil
+---@field yank_left string|false|nil
+---@field yank_down string|false|nil
+---@field yank_up string|false|nil
+---@field yank_right string|false|nil
 
 ---@class TossTransport
 ---@field send fun(direction: TossDirection, text: string): TossResult<nil>
@@ -24,10 +29,10 @@ local which_key = require("toss.which_key")
 ---@class Toss
 ---@field config TossConfig
 ---@field setup fun(opts: TossSetupOptions|nil): Toss
----@field left fun(): boolean
----@field down fun(): boolean
----@field up fun(): boolean
----@field right fun(): boolean
+---@field left fun(mode: TossContextMode|nil): boolean
+---@field down fun(mode: TossContextMode|nil): boolean
+---@field up fun(mode: TossContextMode|nil): boolean
+---@field right fun(mode: TossContextMode|nil): boolean
 
 ---@class TossSetupOptions
 ---@field mappings boolean|TossMappings|nil
@@ -54,6 +59,19 @@ local function notify(err)
   vim.notify("toss: " .. errors.message(err), notification_level)
 end
 
+---@param direction TossDirection
+---@param mode TossContextMode|nil
+---@return boolean
+local function run(direction, mode)
+  mode = mode or "file"
+  local run_result = runner.run(direction, mode, M.config)
+  if run_result.kind == "err" then
+    notify(run_result.error)
+  end
+
+  return run_result.kind == "ok"
+end
+
 ---@param opts TossSetupOptions|nil
 ---@return Toss
 function M.setup(opts)
@@ -70,7 +88,12 @@ function M.setup(opts)
     M.config[key] = value
   end
 
-  local mappings_result = mappings.setup(M.config.mappings, M)
+  local register_result = context_register.setup()
+  if register_result.kind == "err" then
+    notify(register_result.error)
+  end
+
+  local mappings_result = mappings.setup(M.config.mappings, run)
   if mappings_result.kind == "err" then
     notify(mappings_result.error)
   end
@@ -83,35 +106,28 @@ function M.setup(opts)
   return M
 end
 
----@param direction TossDirection
+---@param mode TossContextMode|nil
 ---@return boolean
-local function run(direction)
-  local run_result = runner.run(direction, M.config)
-  if run_result.kind == "err" then
-    notify(run_result.error)
-  end
-
-  return run_result.kind == "ok"
+function M.left(mode)
+  return run("left", mode)
 end
 
+---@param mode TossContextMode|nil
 ---@return boolean
-function M.left()
-  return run("left")
+function M.down(mode)
+  return run("down", mode)
 end
 
+---@param mode TossContextMode|nil
 ---@return boolean
-function M.down()
-  return run("down")
+function M.up(mode)
+  return run("up", mode)
 end
 
+---@param mode TossContextMode|nil
 ---@return boolean
-function M.up()
-  return run("up")
-end
-
----@return boolean
-function M.right()
-  return run("right")
+function M.right(mode)
+  return run("right", mode)
 end
 
 return M

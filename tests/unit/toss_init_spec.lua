@@ -8,9 +8,23 @@ local context = require("toss.context")
 local transports = require("toss.transports")
 local herdr = transports.registry.herdr
 
+-- Unit tests provide only the Neovim APIs used by toss.setup().
+_G.vim = {
+  api = {
+    nvim_create_augroup = function()
+      return 1
+    end,
+    nvim_create_autocmd = function()
+      return 1
+    end,
+  },
+}
+
 local function with_fake_context(callback)
   local previous_capture = context.capture
-  rawset(context, "capture", function()
+  local captured_mode
+  rawset(context, "capture", function(mode)
+    captured_mode = mode
     return result.ok({
       path = "src/domain/user.lua",
       start_line = nil,
@@ -24,12 +38,22 @@ local function with_fake_context(callback)
   if not ok then
     error(err, 0)
   end
+
+  return captured_mode
 end
 
 local function with_notifications(callback)
   local previous_vim = _G.vim
   local notifications = {}
   _G.vim = {
+    api = {
+      nvim_create_augroup = function()
+        return 1
+      end,
+      nvim_create_autocmd = function()
+        return 1
+      end,
+    },
     log = { levels = { WARN = "warn", ERROR = "error" } },
     notify = function(message, level)
       notifications[#notifications + 1] = { message = message, level = level }
@@ -62,6 +86,14 @@ local function with_keymaps(callback)
   local previous_vim = _G.vim
   local calls = {}
   _G.vim = {
+    api = {
+      nvim_create_augroup = function()
+        return 1
+      end,
+      nvim_create_autocmd = function()
+        return 1
+      end,
+    },
     keymap = {
       set = function(modes, key, mapping_callback, options)
         calls[#calls + 1] = {
@@ -138,7 +170,7 @@ test.describe("toss setup", function()
     test.equal(#calls, 0)
   end)
 
-  test.it("creates normal and visual mappings for each direction", function()
+  test.it("creates file and explicit yank mappings when enabled", function()
     toss.config = {}
 
     local calls = with_keymaps(function()
@@ -146,10 +178,14 @@ test.describe("toss setup", function()
     end)
 
     local expected = {
-      { key = "<leader>th", direction = "left" },
-      { key = "<leader>tj", direction = "down" },
-      { key = "<leader>tk", direction = "up" },
-      { key = "<leader>tl", direction = "right" },
+      { key = "<leader>th", direction = "left", desc = "Toss left" },
+      { key = "<leader>tj", direction = "down", desc = "Toss down" },
+      { key = "<leader>tk", direction = "up", desc = "Toss up" },
+      { key = "<leader>tl", direction = "right", desc = "Toss right" },
+      { key = "<leader>tyh", desc = "Toss yank left" },
+      { key = "<leader>tyj", desc = "Toss yank down" },
+      { key = "<leader>tyk", desc = "Toss yank up" },
+      { key = "<leader>tyl", desc = "Toss yank right" },
     }
 
     test.equal(#calls, #expected)
@@ -157,8 +193,9 @@ test.describe("toss setup", function()
       test.equal(calls[index].key, mapping.key)
       test.equal(calls[index].modes[1], "n")
       test.equal(calls[index].modes[2], "x")
-      test.equal(calls[index].callback, toss[mapping.direction])
       test.equal(calls[index].options.silent, true)
+      test.equal(calls[index].options.desc, mapping.desc)
+      test.truthy(type(calls[index].callback) == "function")
     end
   end)
 
@@ -327,6 +364,22 @@ test.describe("toss directions", function()
       test.equal(calls[index].direction, direction)
       test.equal(calls[index].text, "@src/domain/user.lua")
     end
+  end)
+
+  test.it("passes an explicit yank mode through the public API", function()
+    toss.config = {
+      transport = {
+        send = function()
+          return result.ok()
+        end,
+      },
+    }
+
+    local captured_mode = with_fake_context(function()
+      test.equal(toss.left("yank"), true)
+    end)
+
+    test.equal(captured_mode, "yank")
   end)
 
   test.it("notifies unsupported context as a warning and does not send", function()

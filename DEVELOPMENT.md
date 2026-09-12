@@ -10,7 +10,7 @@ Open Neovim with its working directory set to the repository, then run:
 :luafile dev/init.lua
 ```
 
-You should see a notification confirming that the development source was loaded. The setup also selects `transport = "auto"`, enables the recommended mappings, and opts into the optional which-key toss group.
+You should see a notification confirming that the development source was loaded. The setup also selects `transport = "auto"`, enables the file and explicit yank mappings, and opts into the optional which-key toss group.
 
 If Neovim's working directory is elsewhere, use the absolute path:
 

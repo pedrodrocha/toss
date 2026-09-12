@@ -64,6 +64,13 @@ local function capture_selection(keys)
 end
 
 test.describe("context capture", function()
+  test.it("rejects an unknown context mode", function()
+    local capture_result = context.capture("other")
+
+    test.equal(capture_result.kind, "err")
+    test.equal(errors.message(capture_result.error), "context mode must be \"file\" or \"yank\": other")
+  end)
+
   test.it("captures a normal file relative to the project root", function()
     edit(inside_path)
     vim.api.nvim_win_set_cursor(0, { 2, 0 })

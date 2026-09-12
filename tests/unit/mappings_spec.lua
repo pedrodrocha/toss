@@ -16,12 +16,11 @@ local function with_vim(fake_vim, callback)
   end
 end
 
-local callbacks = {
-  left = function() end,
-  down = function() end,
-  up = function() end,
-  right = function() end,
-}
+local run_calls = {}
+local function run(direction, mode)
+  run_calls[#run_calls + 1] = { direction = direction, mode = mode }
+  return true
+end
 
 test.describe("toss mappings", function()
   test.it("does not register disabled mappings", function()
@@ -34,7 +33,7 @@ test.describe("toss mappings", function()
         end,
       },
     }, function()
-      local setup_result = mappings.setup(false, callbacks)
+      local setup_result = mappings.setup(false, run)
 
       test.equal(setup_result.kind, "ok")
     end)
@@ -42,7 +41,82 @@ test.describe("toss mappings", function()
     test.equal(calls, 0)
   end)
 
-  test.it("registers default mappings for Normal and Visual mode", function()
+  test.it("registers file and yank mappings from one configuration", function()
+    local calls = {}
+    run_calls = {}
+
+    with_vim({
+      keymap = {
+        set = function(modes, key, callback, options)
+          calls[#calls + 1] = {
+            modes = modes,
+            key = key,
+            callback = callback,
+            options = options,
+          }
+        end,
+      },
+    }, function()
+      local setup_result = mappings.setup(true, run)
+
+      test.equal(setup_result.kind, "ok")
+    end)
+
+    local expected = {
+      { key = "<leader>th", direction = "left", mode = "file", desc = "Toss left" },
+      { key = "<leader>tj", direction = "down", mode = "file", desc = "Toss down" },
+      { key = "<leader>tk", direction = "up", mode = "file", desc = "Toss up" },
+      { key = "<leader>tl", direction = "right", mode = "file", desc = "Toss right" },
+      { key = "<leader>tyh", direction = "left", mode = "yank", desc = "Toss yank left" },
+      { key = "<leader>tyj", direction = "down", mode = "yank", desc = "Toss yank down" },
+      { key = "<leader>tyk", direction = "up", mode = "yank", desc = "Toss yank up" },
+      { key = "<leader>tyl", direction = "right", mode = "yank", desc = "Toss yank right" },
+    }
+
+    test.equal(#calls, #expected)
+    for index, expected_mapping in ipairs(expected) do
+      local call = calls[index]
+      test.equal(call.key, expected_mapping.key)
+      test.equal(call.modes[1], "n")
+      test.equal(call.modes[2], "x")
+      test.truthy(type(call.callback) == "function")
+      call.callback()
+      test.equal(run_calls[index].direction, expected_mapping.direction)
+      test.equal(run_calls[index].mode, expected_mapping.mode)
+      test.equal(call.options.silent, true)
+      test.equal(call.options.desc, expected_mapping.desc)
+    end
+  end)
+
+  test.it("supports overrides and disabled directions", function()
+    local calls = {}
+
+    with_vim({
+      keymap = {
+        set = function(_, key)
+          calls[#calls + 1] = key
+        end,
+      },
+    }, function()
+      local setup_result = mappings.setup({
+        left = "<leader>tL",
+        down = false,
+        yank_left = false,
+        yank_down = false,
+        yank_up = false,
+        yank_right = false,
+      }, run)
+
+      test.equal(setup_result.kind, "ok")
+    end)
+
+    test.equal(#calls, 3)
+    test.equal(calls[1], "<leader>tL")
+    test.equal(calls[2], "<leader>tk")
+    test.equal(calls[3], "<leader>tl")
+  end)
+
+  test.it("uses one mapping configuration for both context modes", function()
     local calls = {}
 
     with_vim({
@@ -57,60 +131,36 @@ test.describe("toss mappings", function()
         end,
       },
     }, function()
-      local setup_result = mappings.setup(true, callbacks)
+      local setup_result = mappings.setup({ yank_left = "<leader>tyH", yank_down = false }, run)
 
       test.equal(setup_result.kind, "ok")
     end)
 
     local expected = {
-      { key = "<leader>th", direction = "left" },
-      { key = "<leader>tj", direction = "down" },
-      { key = "<leader>tk", direction = "up" },
-      { key = "<leader>tl", direction = "right" },
+      "<leader>th",
+      "<leader>tj",
+      "<leader>tk",
+      "<leader>tl",
+      "<leader>tyH",
+      "<leader>tyk",
+      "<leader>tyl",
     }
 
     test.equal(#calls, #expected)
-    for index, expected_mapping in ipairs(expected) do
-      local call = calls[index]
-      test.equal(call.key, expected_mapping.key)
-      test.equal(call.modes[1], "n")
-      test.equal(call.modes[2], "x")
-      test.equal(call.callback, callbacks[expected_mapping.direction])
-      test.equal(call.options.silent, true)
-      test.equal(call.options.desc, "Toss " .. expected_mapping.direction)
+    for index, key in ipairs(expected) do
+      test.equal(calls[index].key, key)
     end
-  end)
-
-  test.it("supports overrides and disabled directions", function()
-    local calls = {}
-
-    with_vim({
-      keymap = {
-        set = function(_, key)
-          calls[#calls + 1] = key
-        end,
-      },
-    }, function()
-      local setup_result = mappings.setup({ left = "<leader>tL", down = false }, callbacks)
-
-      test.equal(setup_result.kind, "ok")
-    end)
-
-    test.equal(#calls, 3)
-    test.equal(calls[1], "<leader>tL")
-    test.equal(calls[2], "<leader>tk")
-    test.equal(calls[3], "<leader>tl")
   end)
 
   test.it("returns configuration and API errors without notifying", function()
     ---@type any
     local invalid_configuration = "enabled"
-    local configuration_result = mappings.setup(invalid_configuration, callbacks)
+    local configuration_result = mappings.setup(invalid_configuration, run)
     test.equal(configuration_result.kind, "err")
     test.equal(errors.message(configuration_result.error), "mappings must be true or a table")
 
     with_vim({}, function()
-      local setup_result = mappings.setup(true, callbacks)
+      local setup_result = mappings.setup(true, run)
 
       test.equal(setup_result.kind, "err")
       test.equal(errors.message(setup_result.error), "keymap API is unavailable")

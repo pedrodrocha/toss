@@ -23,6 +23,21 @@ test.describe("formatter", function()
     test.equal(formatted.value, "@src/domain/user.lua#L42-L67")
   end)
 
+  test.it("passes literal register text through unchanged", function()
+    local text = "first line\nsecond line\n"
+    local formatted = formatter.format({ text = text })
+
+    test.equal(formatted.kind, "ok")
+    test.equal(formatted.value, text)
+  end)
+
+  test.it("rejects empty literal register text", function()
+    local formatted = formatter.format({ text = "" })
+
+    test.equal(formatted.kind, "err")
+    test.equal(errors.message(formatted.error), "context text must be a non-empty string")
+  end)
+
   test.it("returns an error for invalid or incomplete context", function()
     local invalid_contexts = {
       nil,

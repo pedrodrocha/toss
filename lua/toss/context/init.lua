@@ -1,12 +1,20 @@
----@class TossContext
+---@class TossFileContext
 ---@field path string
 ---@field start_line integer|nil
 ---@field end_line integer|nil
 
+---@class TossTextContext
+---@field text string
+
+---@alias TossContext TossFileContext|TossTextContext
+
+---@alias TossContextMode "file"|"yank"
+
 ---@class TossContextModule
----@field capture fun(): TossResult<TossContext>
+---@field capture fun(mode: TossContextMode|nil): TossResult<TossContext>
 
 local errors = require("toss.errors")
+local register_context = require("toss.context.register")
 local result = require("toss.result")
 local M = {}
 local project_root = require("toss.context.root")
@@ -63,7 +71,7 @@ local function visual_range()
 end
 
 ---@return TossResult<TossContext>
-function M.capture()
+local function capture_from_file()
   local buffer_result = assert_buffer_is_file()
   if buffer_result.kind == "err" then
     return buffer_result
@@ -88,6 +96,39 @@ function M.capture()
     start_line = start_line,
     end_line = end_line,
   })
+end
+
+---@return TossResult<TossContext>
+local function capture_from_yank()
+  local register_result = register_context.current()
+  if register_result.kind == "err" then
+    return register_result
+  end
+
+  local register = register_result.value
+  if register.path ~= nil and register.start_line ~= nil and register.end_line ~= nil then
+    return result.ok({
+      path = register.path,
+      start_line = register.start_line,
+      end_line = register.end_line,
+    })
+  end
+
+  return result.ok({ text = register.text })
+end
+
+---@param mode TossContextMode|nil
+---@return TossResult<TossContext>
+function M.capture(mode)
+  if mode == nil or mode == "file" then
+    return capture_from_file()
+  end
+
+  if mode == "yank" then
+    return capture_from_yank()
+  end
+
+  return result.err(errors.invalid_context_mode(mode))
 end
 
 return M
