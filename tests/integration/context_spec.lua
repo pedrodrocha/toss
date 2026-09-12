@@ -3,6 +3,7 @@ vim.opt.rtp:prepend(vim.fn.getcwd())
 
 local test = require("tests.testlib")
 local context = require("toss.context")
+local project_root = require("toss.context.project_root")
 
 local root = vim.fn.getcwd()
 local inside_path = root .. "/.toss-context-fixture"
@@ -101,6 +102,22 @@ test.describe("context capture", function()
     test.equal(value.path, outside_path)
     test.equal(value.start_line, nil)
     test.equal(value.end_line, nil)
+  end)
+
+  test.it("uses an absolute path when no project root is resolved", function()
+    edit(inside_path)
+
+    local previous_resolve = project_root.resolve
+    project_root.resolve = function()
+      return nil
+    end
+
+    local value, err = context.capture()
+
+    project_root.resolve = previous_resolve
+
+    test.equal(err, nil)
+    test.equal(value.path, inside_path)
   end)
 end)
 

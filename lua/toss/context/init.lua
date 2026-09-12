@@ -31,11 +31,7 @@ function M.capture()
   end
 
   local root = project_root.resolve(0)
-  if not root then
-    return invalid("could not determine project root")
-  end
-
-  local relative_path = vim.fs.relpath(root, absolute_path)
+  local relative_path = root and vim.fs.relpath(root, absolute_path)
   local path = relative_path
   if not path or path == "" then
     path = absolute_path
