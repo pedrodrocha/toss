@@ -45,13 +45,13 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("right", {
+      local run_result = runner.run("right", "register", {
         transport = {
           send = function()
             return result.ok()
           end,
         },
-      }, "register")
+      })
 
       test.equal(run_result.kind, "ok")
     end)
@@ -79,7 +79,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("right", { transport = transport })
+      local run_result = runner.run("right", nil, { transport = transport })
 
       test.equal(run_result.kind, "ok")
     end)
@@ -111,7 +111,7 @@ test.describe("toss runner", function()
         return result.ok("should not be sent")
       end,
     }, function()
-      local run_result = runner.run("left", { transport = transport })
+      local run_result = runner.run("left", nil, { transport = transport })
 
       test.equal(errors.message(assert_failure(run_result)), "current buffer is not a file")
     end)
@@ -133,7 +133,7 @@ test.describe("toss runner", function()
         return result.err(formatter_error)
       end,
     }, function()
-      local run_result = runner.run("up", {
+      local run_result = runner.run("up", nil, {
         transport = {
           send = function()
             send_calls = send_calls + 1
@@ -155,7 +155,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("up", {
+      local run_result = runner.run("up", nil, {
         transport = {
           send = function()
             return result.err(transport_error)
@@ -178,7 +178,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("right", {
+      local run_result = runner.run("right", nil, {
         transport = {
           send = function()
             send_calls = send_calls + 1
@@ -204,7 +204,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("right", {
+      local run_result = runner.run("right", nil, {
         transport = {
           send = function()
             error("send exploded")

@@ -61,7 +61,7 @@ end
 ---@param source TossContextSource|nil
 ---@return boolean
 local function run(direction, source)
-  local run_result = runner.run(direction, M.config, source)
+  local run_result = runner.run(direction, source, M.config)
   if run_result.kind == "err" then
     notify(run_result.error)
   end
