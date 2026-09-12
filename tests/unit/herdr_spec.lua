@@ -275,7 +275,9 @@ test.describe("Herdr transport send-text", function()
     }
 
     with_vim(fake_vim, function()
-      local sent, err = herdr.send("right", nil)
+      ---@type any
+      local invalid_text = nil
+      local sent, err = herdr.send("right", invalid_text)
 
       test.equal(sent, false)
       test.contains(err, "requires text")
