@@ -1,207 +1,207 @@
 ---@alias TossCommandResult { code: integer|nil, stdout: string|nil, stderr: string|nil }
 
 ---@class TossHerdrTransport : TossTransport
----@field neighbor fun(direction: TossDirection): string|nil, string|nil
+---@field neighbor fun(direction: TossDirection): TossResult<string>
 
+local errors = require("toss.errors")
+local result = require("toss.result")
 local M = {}
 
 ---@type table<TossDirection, boolean>
 local valid_directions = {
-	left = true,
-	down = true,
-	up = true,
-	right = true,
+  left = true,
+  down = true,
+  up = true,
+  right = true,
 }
 
 ---@param value string
 ---@return string
 local function trim(value)
-	local trimmed = value:gsub("^%s+", ""):gsub("%s+$", "")
-	return trimmed
+  local trimmed = value:gsub("^%s+", ""):gsub("%s+$", "")
+  return trimmed
 end
 
----@param result TossCommandResult
+---@param command_result TossCommandResult
 ---@return string
-local function command_detail(result)
-	local details = {}
+local function command_detail(command_result)
+  local details = {}
 
-	for _, output in ipairs({ result.stderr, result.stdout }) do
-		if type(output) == "string" then
-			output = trim(output)
-			if output ~= "" then
-				details[#details + 1] = output
-			end
-		end
-	end
+  for _, output in ipairs({ command_result.stderr, command_result.stdout }) do
+    if type(output) == "string" then
+      output = trim(output)
+      if output ~= "" then
+        details[#details + 1] = output
+      end
+    end
+  end
 
-	return table.concat(details, " | ")
+  return table.concat(details, " | ")
 end
 
----@param result TossCommandResult
+---@param command_result TossCommandResult
 ---@param operation string
----@return string
-local function command_failure(result, operation)
-	local message = operation .. " failed"
-	if result.code ~= nil then
-		message = message .. " (exit code " .. tostring(result.code) .. ")"
-	end
+---@return TossError
+local function command_failure(command_result, operation)
+  local message = operation .. " failed"
+  if command_result.code ~= nil then
+    message = message .. " (exit code " .. tostring(command_result.code) .. ")"
+  end
 
-	local detail = command_detail(result)
-	if detail ~= "" then
-		message = message .. ": " .. detail
-	end
-
-	return message
+  return errors.herdr_command(message, command_detail(command_result))
 end
 
 ---@param direction TossDirection
----@return TossDirection|nil, string|nil
+---@return TossResult<TossDirection>
 local function validate_direction(direction)
-	if not valid_directions[direction] then
-		return nil, "invalid Herdr neighbor direction"
-	end
+  if not valid_directions[direction] then
+    return result.err(errors.herdr_direction())
+  end
 
-	return direction
+  return result.ok(direction)
 end
 
----@return string|nil, string|nil
+---@return TossResult<string>
 local function validate_environment()
-	if type(vim) ~= "table" or type(vim.env) ~= "table" or vim.env.HERDR_ENV ~= "1" then
-		return nil, "Herdr transport requires Neovim to run inside Herdr"
-	end
+  if type(vim) ~= "table" or type(vim.env) ~= "table" or vim.env.HERDR_ENV ~= "1" then
+    return result.err(errors.herdr_environment())
+  end
 
-	local source_pane_id = vim.env.HERDR_PANE_ID
-	if type(source_pane_id) ~= "string" or source_pane_id == "" then
-		return nil, "Herdr transport requires HERDR_PANE_ID"
-	end
+  local source_pane_id = vim.env.HERDR_PANE_ID
+  if type(source_pane_id) ~= "string" or source_pane_id == "" then
+    return result.err(errors.herdr_pane())
+  end
 
-	return source_pane_id
+  return result.ok(source_pane_id)
 end
 
 ---@param argv string[]
 ---@param operation string
----@return TossCommandResult|nil, string|nil
+---@return TossResult<TossCommandResult>
 local function run_command(argv, operation)
-	if type(vim.system) ~= "function" then
-		return nil, operation .. " requires Neovim's vim.system API"
-	end
+  if type(vim) ~= "table" or type(vim.system) ~= "function" then
+    return result.err(errors.herdr_spawn(operation .. " requires Neovim's vim.system API"))
+  end
 
-	local started, process = pcall(vim.system, argv)
-	if not started then
-		return nil, "could not start " .. operation .. ": " .. tostring(process)
-	end
+  local started, process = pcall(vim.system, argv)
+  if not started then
+    return result.err(errors.herdr_spawn("could not start " .. operation, process))
+  end
 
-	if type(process) ~= "table" or type(process.wait) ~= "function" then
-		return nil, operation .. " did not return a process"
-	end
+  if type(process) ~= "table" or type(process.wait) ~= "function" then
+    return result.err(errors.herdr_process(operation .. " did not return a process"))
+  end
 
-	local waited, result = pcall(process.wait, process)
-	if not waited then
-		return nil, operation .. " failed: " .. tostring(result)
-	end
+  local waited, command_result = pcall(process.wait, process)
+  if not waited then
+    return result.err(errors.herdr_wait(operation .. " failed", command_result))
+  end
 
-	if type(result) ~= "table" then
-		return nil, operation .. " returned no result"
-	end
+  if type(command_result) ~= "table" then
+    return result.err(errors.herdr_result(operation .. " returned no result"))
+  end
 
-	if result.code ~= 0 then
-		return nil, command_failure(result, operation)
-	end
+  if command_result.code ~= 0 then
+    return result.err(command_failure(command_result, operation))
+  end
 
-	return result
+  return result.ok(command_result)
 end
 
 ---@param source_pane_id string
 ---@param direction TossDirection
----@return TossCommandResult|nil, string|nil
+---@return TossResult<TossCommandResult>
 local function run_neighbor(source_pane_id, direction)
-	return run_command({
-		"herdr",
-		"pane",
-		"neighbor",
-		"--pane",
-		source_pane_id,
-		"--direction",
-		direction,
-	}, "Herdr neighbor lookup")
+  return run_command({
+    "herdr",
+    "pane",
+    "neighbor",
+    "--pane",
+    source_pane_id,
+    "--direction",
+    direction,
+  }, "Herdr neighbor lookup")
 end
 
 ---@param stdout string|nil
 ---@param direction TossDirection
----@return string|nil, string|nil
+---@return TossResult<string>
 local function decode_neighbor(stdout, direction)
-	if type(vim.json) ~= "table" or type(vim.json.decode) ~= "function" then
-		return nil, "Herdr neighbor lookup requires vim.json.decode"
-	end
+  if type(vim) ~= "table" or type(vim.json) ~= "table" or type(vim.json.decode) ~= "function" then
+    return result.err(errors.herdr_response("Herdr neighbor lookup requires vim.json.decode"))
+  end
 
-	local decoded, response = pcall(vim.json.decode, stdout or "")
-	if not decoded then
-		return nil, "could not decode Herdr neighbor response: " .. tostring(response)
-	end
+  local decoded, response = pcall(vim.json.decode, stdout or "")
+  if not decoded then
+    return result.err(errors.herdr_response("could not decode Herdr neighbor response", response))
+  end
 
-	local result_data = type(response) == "table" and response.result
-	local neighbor = type(result_data) == "table" and result_data.neighbor
-	local destination_pane_id = type(neighbor) == "table" and neighbor.neighbor_pane_id
+  local result_data = type(response) == "table" and response.result
+  local neighbor = type(result_data) == "table" and result_data.neighbor
+  local destination_pane_id = type(neighbor) == "table" and neighbor.neighbor_pane_id
 
-	if type(destination_pane_id) ~= "string" or destination_pane_id == "" then
-		return nil, "no adjacent Herdr pane found in direction " .. direction
-	end
+  if type(destination_pane_id) ~= "string" or destination_pane_id == "" then
+    return result.err(errors.herdr_neighbor(direction))
+  end
 
-	return destination_pane_id
+  return result.ok(destination_pane_id)
 end
 
 ---@param direction TossDirection
----@return string|nil, string|nil
+---@return TossResult<string>
 function M.neighbor(direction)
-	local validated_direction, direction_error = validate_direction(direction)
-	if not validated_direction then
-		return nil, direction_error
-	end
+  local direction_result = validate_direction(direction)
+  if direction_result.kind == "err" then
+    return direction_result
+  end
 
-	local source_pane_id, environment_error = validate_environment()
-	if not source_pane_id then
-		return nil, environment_error
-	end
+  local source_result = validate_environment()
+  if source_result.kind == "err" then
+    return source_result
+  end
 
-	local result, command_error = run_neighbor(source_pane_id, validated_direction)
-	if not result then
-		return nil, command_error
-	end
+  local source_pane_id = source_result.value
+  local direction_value = direction_result.value
+  local command_result = run_neighbor(source_pane_id, direction_value)
+  if command_result.kind == "err" then
+    return command_result
+  end
 
-	return decode_neighbor(result.stdout, validated_direction)
+  local command_output = command_result.value
+  return decode_neighbor(command_output.stdout, direction_value)
 end
 
 ---@param direction TossDirection
 ---@param text string
----@return boolean, string|nil
+---@return TossResult<nil>
 function M.send(direction, text)
-	if type(text) ~= "string" then
-		return false, "Herdr send-text requires text"
-	end
+  if type(text) ~= "string" then
+    return result.err(errors.herdr_text())
+  end
 
-	local destination_pane_id, neighbor_error = M.neighbor(direction)
-	if not destination_pane_id then
-		return false, neighbor_error
-	end
+  local neighbor_result = M.neighbor(direction)
+  if neighbor_result.kind == "err" then
+    return result.err(neighbor_result.error)
+  end
 
-	local _, send_error = run_command({
-		"herdr",
-		"pane",
-		"send-text",
-		destination_pane_id,
-		text,
-	}, "Herdr send-text")
-	if send_error then
-		return false, send_error
-	end
+  local destination_pane_id = neighbor_result.value
+  local send_result = run_command({
+    "herdr",
+    "pane",
+    "send-text",
+    destination_pane_id,
+    text,
+  }, "Herdr send-text")
+  if send_result.kind == "err" then
+    return result.err(send_result.error)
+  end
 
-	return true
+  return result.ok()
 end
 
 ---@return boolean
 function M.available()
-	local source_pane_id = validate_environment()
-	return source_pane_id ~= nil
+  return validate_environment().kind == "ok"
 end
 
 return M

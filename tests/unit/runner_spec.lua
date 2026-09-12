@@ -1,6 +1,8 @@
 package.path = "./lua/?.lua;./lua/?/init.lua;./?.lua;./?/init.lua;" .. package.path
 
 local test = require("tests.testlib")
+local errors = require("toss.errors")
+local result = require("toss.result")
 local context = require("toss.context")
 local formatter = require("toss.formatter")
 local runner = require("toss.runner")
@@ -10,19 +12,24 @@ local function with_stubs(stubs, callback)
   local previous_format = formatter.format
 
   if stubs.capture then
-    context.capture = stubs.capture
+    rawset(context, "capture", stubs.capture)
   end
   if stubs.format then
-    formatter.format = stubs.format
+    rawset(formatter, "format", stubs.format)
   end
 
   local ok, err = xpcall(callback, debug.traceback)
-  context.capture = previous_capture
-  formatter.format = previous_format
+  rawset(context, "capture", previous_capture)
+  rawset(formatter, "format", previous_format)
 
   if not ok then
     error(err, 0)
   end
+end
+
+local function assert_failure(outcome)
+  test.equal(outcome.kind, "err")
+  return outcome.error
 end
 
 test.describe("toss runner", function()
@@ -32,24 +39,23 @@ test.describe("toss runner", function()
     local transport = {
       send = function(direction, text)
         calls[#calls + 1] = { step = "send", direction = direction, text = text }
-        return true
+        return result.ok()
       end,
     }
 
     with_stubs({
       capture = function()
         calls[#calls + 1] = { step = "capture" }
-        return context_value
+        return result.ok(context_value)
       end,
       format = function(value)
         calls[#calls + 1] = { step = "format", context = value }
-        return "@src/file.lua"
+        return result.ok("@src/file.lua")
       end,
     }, function()
-      local ok, err = runner.run("right", { transport = transport })
+      local run_result = runner.run("right", { transport = transport })
 
-      test.equal(ok, true)
-      test.equal(err, nil)
+      test.equal(run_result.kind, "ok")
     end)
 
     test.equal(calls[1].step, "capture")
@@ -66,23 +72,22 @@ test.describe("toss runner", function()
     local transport = {
       send = function()
         send_calls = send_calls + 1
-        return true
+        return result.ok()
       end,
     }
 
     with_stubs({
       capture = function()
-        return nil, "current buffer is not a file"
+        return result.err(errors.buffer_not_file())
       end,
       format = function()
         format_calls = format_calls + 1
-        return "should not be sent"
+        return result.ok("should not be sent")
       end,
     }, function()
-      local ok, err = runner.run("left", { transport = transport })
+      local run_result = runner.run("left", { transport = transport })
 
-      test.equal(ok, false)
-      test.equal(err, "current buffer is not a file")
+      test.equal(errors.message(assert_failure(run_result)), "current buffer is not a file")
     end)
 
     test.equal(format_calls, 0)
@@ -90,70 +95,117 @@ test.describe("toss runner", function()
   end)
 
   test.it("returns formatter and transport failures", function()
-    local formatter_error = "invalid context"
-    local transport_error = "no adjacent pane"
+    local formatter_error = errors.invalid_context()
+    local transport_error = errors.herdr_neighbor("up")
     local send_calls = 0
 
     with_stubs({
       capture = function()
-        return { path = "src/file.lua" }
+        return result.ok({ path = "src/file.lua" })
       end,
       format = function()
-        return nil, formatter_error
+        return result.err(formatter_error)
       end,
     }, function()
-      local ok, err = runner.run("up", {
+      local run_result = runner.run("up", {
         transport = {
           send = function()
             send_calls = send_calls + 1
-            return false, transport_error
+            return result.err(transport_error)
           end,
         },
       })
 
-      test.equal(ok, false)
-      test.equal(err, formatter_error)
+      test.equal(errors.message(assert_failure(run_result)), errors.message(formatter_error))
     end)
 
     test.equal(send_calls, 0)
 
     with_stubs({
       capture = function()
-        return { path = "src/file.lua" }
+        return result.ok({ path = "src/file.lua" })
       end,
       format = function()
-        return "@src/file.lua"
+        return result.ok("@src/file.lua")
       end,
     }, function()
-      local ok, err = runner.run("up", {
+      local run_result = runner.run("up", {
         transport = {
           send = function()
-            return false, transport_error
+            return result.err(transport_error)
           end,
         },
       })
 
-      test.equal(ok, false)
-      test.equal(err, transport_error)
+      test.equal(errors.message(assert_failure(run_result)), errors.message(transport_error))
+    end)
+  end)
+
+  test.it("rejects invalid transport results without reporting success", function()
+    local send_calls = 0
+
+    with_stubs({
+      capture = function()
+        return result.ok({ path = "src/file.lua" })
+      end,
+      format = function()
+        return result.ok("@src/file.lua")
+      end,
+    }, function()
+      local run_result = runner.run("right", {
+        transport = {
+          send = function()
+            send_calls = send_calls + 1
+            ---@type any
+            local invalid_result = nil
+            return invalid_result
+          end,
+        },
+      })
+
+      test.equal(errors.message(assert_failure(run_result)), "transport must return a Result")
+    end)
+
+    test.equal(send_calls, 1)
+  end)
+
+  test.it("converts transport exceptions into failures", function()
+    with_stubs({
+      capture = function()
+        return result.ok({ path = "src/file.lua" })
+      end,
+      format = function()
+        return result.ok("@src/file.lua")
+      end,
+    }, function()
+      local run_result = runner.run("right", {
+        transport = {
+          send = function()
+            error("send exploded")
+          end,
+        },
+      })
+
+      local err = assert_failure(run_result)
+      test.contains(errors.message(err), "transport failed: ")
+      test.contains(errors.message(err), "send exploded")
     end)
   end)
 
   test.it("resolves and validates configured transports", function()
     local transport = { send = function() end }
 
-    local resolved, err = runner.resolve_transport({ transport = transport })
-    test.equal(resolved, transport)
-    test.equal(err, nil)
+    local resolved = runner.resolve_transport({ transport = transport })
+    test.equal(resolved.kind, "ok")
+    test.equal(resolved.value, transport)
 
-    resolved, err = runner.resolve_transport({})
-    test.equal(resolved, nil)
-    test.equal(err, "transport is not configured")
+    resolved = runner.resolve_transport({})
+    test.equal(errors.message(assert_failure(resolved)), "transport is not configured")
 
     ---@type any
     local invalid_transport = {}
-    resolved, err = runner.resolve_transport({ transport = invalid_transport })
-    test.equal(resolved, nil)
-    test.equal(err, "transport must provide send(direction, text)")
+    resolved = runner.resolve_transport({ transport = invalid_transport })
+    test.equal(errors.message(assert_failure(resolved)), "transport must provide send(direction, text)")
   end)
 end)
 

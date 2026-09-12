@@ -1,3 +1,4 @@
+local errors = require("toss.errors")
 local mappings = require("toss.mappings")
 local runner = require("toss.runner")
 local which_key = require("toss.which_key")
@@ -11,7 +12,7 @@ local which_key = require("toss.which_key")
 ---@field right string|false|nil
 
 ---@class TossTransport
----@field send fun(direction: TossDirection, text: string): boolean, string|nil
+---@field send fun(direction: TossDirection, text: string): TossResult<nil>
 ---@field available? fun(): boolean
 
 ---@class TossConfig
@@ -38,11 +39,19 @@ local M = {
   config = {},
 }
 
-local function notify(message)
-  if type(vim) == "table" and type(vim.notify) == "function" then
-    local level = vim.log and vim.log.levels and vim.log.levels.INFO or nil
-    vim.notify("toss: " .. message, level)
+---@param err TossError
+local function notify(err)
+  if type(vim) ~= "table" or type(vim.notify) ~= "function" then
+    return
   end
+
+  local notification_level
+  local level_name = string.upper(errors.level(err))
+  if vim.log and vim.log.levels then
+    notification_level = vim.log.levels[level_name]
+  end
+
+  vim.notify("toss: " .. errors.message(err), notification_level)
 end
 
 ---@param opts TossSetupOptions|nil
@@ -53,7 +62,7 @@ function M.setup(opts)
   end
 
   if type(opts) ~= "table" then
-    notify("setup options must be a table")
+    notify(errors.setup_options())
     return M
   end
 
@@ -61,14 +70,14 @@ function M.setup(opts)
     M.config[key] = value
   end
 
-  local mappings_ok, mappings_error = mappings.setup(M.config.mappings, M)
-  if not mappings_ok then
-    notify(mappings_error)
+  local mappings_result = mappings.setup(M.config.mappings, M)
+  if mappings_result.kind == "err" then
+    notify(mappings_result.error)
   end
 
-  local which_key_ok, which_key_error = which_key.setup(M.config.which_key)
-  if not which_key_ok then
-    notify(which_key_error)
+  local which_key_result = which_key.setup(M.config.which_key)
+  if which_key_result.kind == "err" then
+    notify(which_key_result.error)
   end
 
   return M
@@ -77,12 +86,12 @@ end
 ---@param direction TossDirection
 ---@return boolean
 local function run(direction)
-  local ok, err = runner.run(direction, M.config)
-  if not ok then
-    notify(err)
+  local run_result = runner.run(direction, M.config)
+  if run_result.kind == "err" then
+    notify(run_result.error)
   end
 
-  return ok
+  return run_result.kind == "ok"
 end
 
 ---@return boolean

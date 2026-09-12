@@ -1,82 +1,110 @@
 local context = require("toss.context")
+local errors = require("toss.errors")
 local formatter = require("toss.formatter")
+local result = require("toss.result")
 local transports = require("toss.transports")
 
 ---@class TossRunner
----@field resolve_transport fun(config: TossConfig|nil): TossTransport|nil, string|nil
----@field run fun(direction: TossDirection, config: TossConfig|nil): boolean, string|nil
+---@field resolve_transport fun(config: TossConfig|nil): TossResult<TossTransport>
+---@field run fun(direction: TossDirection, config: TossConfig|nil): TossResult<nil>
 
 local M = {}
 
 ---@param config TossConfig|nil
----@return TossTransport|nil, string|nil
+---@return TossResult<TossTransport>
 local function resolve_transport(config)
   local configured = type(config) == "table" and config.transport
 
   if type(configured) == "string" then
-    local transport_name = configured
-    local transport, transport_error = transports.resolve(transport_name)
-    if not transport then
-      return nil, transport_error
+    local resolved = transports.resolve(configured)
+    if resolved.kind == "err" then
+      return result.err(resolved.error)
     end
 
-    configured = transport
+    configured = resolved.value
+  end
+
+  if configured == nil or configured == false then
+    return result.err(errors.transport_not_configured())
   end
 
   if type(configured) ~= "table" then
-    return nil, "transport is not configured"
+    return result.err(errors.transport_configuration())
   end
 
   if type(configured.send) ~= "function" then
-    return nil, "transport must provide send(direction, text)"
+    return result.err(errors.invalid_transport())
   end
 
-  return configured
+  return result.ok(configured)
 end
 
 ---@param config TossConfig|nil
----@return TossTransport|nil, string|nil
+---@return TossResult<TossTransport>
 function M.resolve_transport(config)
   return resolve_transport(config)
 end
 
 ---@param direction TossDirection
 ---@param config TossConfig|nil
----@return boolean, string|nil
+---@return TossResult<nil>
 function M.run(direction, config)
-  local transport, transport_error = resolve_transport(config)
-  if not transport then
-    return false, transport_error
+  local resolve_ok, transport_result = pcall(resolve_transport, config)
+  if not resolve_ok then
+    return result.err(errors.transport_resolution(transport_result))
   end
 
-  local capture_ok, captured, capture_error = pcall(context.capture)
+  if not result.is(transport_result) then
+    return result.err(errors.invalid_result("transport resolution"))
+  end
+
+  if transport_result.kind == "err" then
+    return result.err(transport_result.error)
+  end
+
+  local transport = transport_result.value
+  local capture_ok, capture_result = pcall(context.capture)
   if not capture_ok then
-    return false, "context capture failed: " .. tostring(captured)
+    return result.err(errors.context_capture(capture_result))
   end
 
-  if not captured then
-    return false, capture_error or "could not capture context"
+  if not result.is(capture_result) then
+    return result.err(errors.invalid_result("context capture"))
   end
 
-  local format_ok, payload, format_error = pcall(formatter.format, captured)
+  if capture_result.kind == "err" then
+    return result.err(capture_result.error)
+  end
+
+  local captured = capture_result.value
+  local format_ok, format_result = pcall(formatter.format, captured)
   if not format_ok then
-    return false, "context formatting failed: " .. tostring(payload)
+    return result.err(errors.context_formatting(format_result))
   end
 
-  if not payload then
-    return false, format_error or "could not format context"
+  if not result.is(format_result) then
+    return result.err(errors.invalid_result("context formatting"))
   end
 
-  local send_ok, sent, send_error = pcall(transport.send, direction, payload)
+  if format_result.kind == "err" then
+    return result.err(format_result.error)
+  end
+
+  local payload = format_result.value
+  local send_ok, send_result = pcall(transport.send, direction, payload)
   if not send_ok then
-    return false, "transport failed: " .. tostring(sent)
+    return result.err(errors.transport_failure(send_result))
   end
 
-  if sent == false or (sent == nil and send_error ~= nil) then
-    return false, send_error or "transport failed"
+  if not result.is(send_result) then
+    return result.err(errors.invalid_transport_result())
   end
 
-  return true
+  if send_result.kind == "err" then
+    return result.err(send_result.error)
+  end
+
+  return result.ok()
 end
 
 return M

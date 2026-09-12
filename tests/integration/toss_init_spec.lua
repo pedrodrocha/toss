@@ -2,6 +2,7 @@ package.path = "./?.lua;./?/init.lua;" .. package.path
 vim.opt.rtp:prepend(vim.fn.getcwd())
 
 local test = require("tests.testlib")
+local toss_result = require("toss.result")
 local toss = require("toss")
 local transports = require("toss.transports")
 
@@ -35,7 +36,7 @@ test.describe("toss directions", function()
       transport = {
         send = function(direction, text)
           calls[#calls + 1] = { direction = direction, text = text }
-          return true
+          return toss_result.ok()
         end,
       },
     })
@@ -47,8 +48,8 @@ test.describe("toss directions", function()
       toss.right(),
     }
 
-    for _, result in ipairs(results) do
-      test.equal(result, true)
+    for _, outcome in ipairs(results) do
+      test.equal(outcome, true)
     end
 
     local expected_directions = { "left", "down", "up", "right" }
@@ -66,16 +67,16 @@ test.describe("toss transport configuration", function()
     local previous_send = transports.registry.herdr.send
     rawset(transports.registry.herdr, "send", function(direction, text)
       calls[#calls + 1] = { direction = direction, text = text }
-      return true
+      return toss_result.ok()
     end)
 
     toss.config = {}
     toss.setup({ transport = "herdr" })
-    local result = toss.right()
+    local outcome = toss.right()
 
     transports.registry.herdr.send = previous_send
 
-    test.equal(result, true)
+    test.equal(outcome, true)
     test.equal(#calls, 1)
     test.equal(calls[1].direction, "right")
     test.equal(calls[1].text, "@.toss-init-fixture")
@@ -86,7 +87,7 @@ test.describe("toss transport configuration", function()
     local previous_send = transports.registry.herdr.send
     rawset(transports.registry.herdr, "send", function(direction, text)
       calls[#calls + 1] = { direction = direction, text = text }
-      return true
+      return toss_result.ok()
     end)
 
     toss.config = {}
