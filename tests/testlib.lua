@@ -46,12 +46,12 @@ function M.run(name, test)
 
   if ok then
     M.passed = M.passed + 1
-    print("ok - " .. name)
+    print("      PASS " .. name)
     return
   end
 
   M.failures = M.failures + 1
-  io.stderr:write("not ok - " .. name .. "\n" .. err .. "\n")
+  io.stderr:write("      FAIL " .. name .. "\n" .. err .. "\n")
 end
 
 function M.it(name, test)
@@ -60,7 +60,7 @@ end
 
 function M.describe(name, suite)
   local full_name = qualified_name(name)
-  print("describe - " .. full_name)
+  print("    " .. full_name)
 
   describe_stack[#describe_stack + 1] = name
   local ok, err = xpcall(suite, debug.traceback)
@@ -68,13 +68,13 @@ function M.describe(name, suite)
 
   if not ok then
     M.failures = M.failures + 1
-    io.stderr:write("not ok - " .. full_name .. "\n" .. err .. "\n")
+    io.stderr:write("    FAIL " .. full_name .. "\n" .. err .. "\n")
   end
 end
 
 function M.finish()
   local total = M.passed + M.failures
-  print(string.format("%d tests, %d failures", total, M.failures))
+  print(string.format("    Result: %d passed, %d failed", M.passed, M.failures))
   os.exit(M.failures == 0 and 0 or 1)
 end
 

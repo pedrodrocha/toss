@@ -24,7 +24,7 @@ run_unit_tests() {
 
   while IFS= read -r spec; do
     found=1
-    printf 'Running unit spec: %s\n' "$spec"
+    printf '  Spec: %s\n' "$spec"
     if ! "$lua_bin" "$spec"; then
       status=1
     fi
@@ -45,7 +45,7 @@ run_integration_tests() {
 
   while IFS= read -r spec; do
     found=1
-    printf 'Running integration spec: %s\n' "$spec"
+    printf '  Spec: %s\n' "$spec"
     if ! "$nvim_bin" --headless -u NONE -i NONE -n -l "$spec"; then
       status=1
     fi
@@ -60,15 +60,21 @@ run_integration_tests() {
   return "$status"
 }
 
-printf 'Running unit tests...\n'
+printf '\n== Unit tests ==\n'
 overall_status=0
 if ! run_unit_tests; then
   overall_status=1
 fi
 
-printf 'Running headless Neovim integration tests...\n'
+printf '\n== Integration tests ==\n'
 if ! run_integration_tests; then
   overall_status=1
+fi
+
+if [[ "$overall_status" -eq 0 ]]; then
+  printf 'All tests passed.\n'
+else
+  printf 'Some tests failed.\n' >&2
 fi
 
 exit "$overall_status"
