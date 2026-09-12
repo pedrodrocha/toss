@@ -10,7 +10,7 @@ Open Neovim with its working directory set to the repository, then run:
 :luafile dev/init.lua
 ```
 
-You should see a notification confirming that the development source was loaded. The setup also selects `transport = "auto"`.
+You should see a notification confirming that the development source was loaded. The setup also selects `transport = "auto"`, enables the recommended mappings, and opts into the optional which-key toss group.
 
 If Neovim's working directory is elsewhere, use the absolute path:
 
@@ -34,6 +34,8 @@ Inside Herdr, the development setup automatically selects Herdr. Open a project 
 :edit README.md
 :lua require("toss").right()
 ```
+
+If which-key is installed, the development setup labels `<leader>t` as `󰧑 toss` in which-key. Without which-key, the rest of the development setup still works.
 
 Outside Herdr, use an injected transport for a local check:
 
