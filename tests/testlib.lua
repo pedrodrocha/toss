@@ -41,6 +41,20 @@ function M.truthy(value, message)
   end
 end
 
+function M.contains(value, fragment, message)
+  if type(value) ~= "string" or type(fragment) ~= "string" or string.find(value, fragment, 1, true) == nil then
+    error(
+      message
+        or string.format(
+          "expected %s to contain %s",
+          value_to_string(value),
+          value_to_string(fragment)
+        ),
+      2
+    )
+  end
+end
+
 function M.run(name, test)
   local ok, err = xpcall(test, debug.traceback)
 

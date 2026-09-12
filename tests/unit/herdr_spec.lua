@@ -3,10 +3,6 @@ package.path = "./lua/?.lua;./lua/?/init.lua;./?.lua;./?/init.lua;" .. package.p
 local test = require("tests.testlib")
 local herdr = require("toss.transports.herdr")
 
-local function contains(value, fragment)
-  return type(value) == "string" and string.find(value, fragment, 1, true) ~= nil
-end
-
 local function with_vim(fake_vim, callback)
   local previous_vim = _G.vim
   _G.vim = fake_vim
@@ -19,38 +15,27 @@ local function with_vim(fake_vim, callback)
   end
 end
 
-local function fake_transport(response)
+local function fake_herdr(options)
+  options = options or {}
+
   local calls = {}
-  local fake_vim = {
-    env = {
-      HERDR_ENV = "1",
-      HERDR_PANE_ID = "source-pane",
+  local neighbor_response = options.neighbor_response or {
+    result = {
+      neighbor = {
+        neighbor_pane_id = "destination-pane",
+      },
     },
-    json = {
-      decode = function(value)
-        test.equal(value, "neighbor response")
-        return response
-      end,
-    },
-    system = function(argv)
-      calls[#calls + 1] = argv
-      return {
-        wait = function()
-          return {
-            code = 0,
-            stdout = "neighbor response",
-            stderr = "",
-          }
-        end,
-      }
-    end,
   }
-
-  return fake_vim, calls
-end
-
-local function fake_send_transport(send_result)
-  local calls = {}
+  local neighbor_result = options.neighbor_result or {
+    code = 0,
+    stdout = "neighbor response",
+    stderr = "",
+  }
+  local send_result = options.send_result or {
+    code = 0,
+    stdout = "",
+    stderr = "",
+  }
   local fake_vim = {
     env = {
       HERDR_ENV = "1",
@@ -59,28 +44,12 @@ local function fake_send_transport(send_result)
     json = {
       decode = function(value)
         test.equal(value, "neighbor response")
-        return {
-          result = {
-            neighbor = {
-              neighbor_pane_id = "destination-pane",
-            },
-          },
-        }
+        return neighbor_response
       end,
     },
     system = function(argv)
       calls[#calls + 1] = argv
-      local result = {
-        code = 0,
-        stdout = "",
-        stderr = "",
-      }
-
-      if argv[3] == "neighbor" then
-        result.stdout = "neighbor response"
-      elseif send_result then
-        result = send_result
-      end
+      local result = argv[3] == "neighbor" and neighbor_result or send_result
 
       return {
         wait = function()
@@ -106,7 +75,7 @@ test.describe("Herdr transport neighbor lookup", function()
       local pane_id, err = herdr.neighbor("right")
 
       test.equal(pane_id, nil)
-      test.truthy(contains(err, "requires Neovim to run inside Herdr"))
+      test.contains(err, "requires Neovim to run inside Herdr")
     end)
 
     test.equal(system_calls, 0)
@@ -122,15 +91,17 @@ test.describe("Herdr transport neighbor lookup", function()
       local pane_id, err = herdr.neighbor("left")
 
       test.equal(pane_id, nil)
-      test.truthy(contains(err, "requires HERDR_PANE_ID"))
+      test.contains(err, "requires HERDR_PANE_ID")
     end)
   end)
 
   test.it("resolves a neighbor using the caller pane ID", function()
-    local fake_vim, calls = fake_transport({
-      result = {
-        neighbor = {
-          neighbor_pane_id = "destination-pane",
+    local fake_vim, calls = fake_herdr({
+      neighbor_response = {
+        result = {
+          neighbor = {
+            neighbor_pane_id = "destination-pane",
+          },
         },
       },
     })
@@ -164,13 +135,13 @@ test.describe("Herdr transport neighbor lookup", function()
     }
 
     for _, response in ipairs(responses) do
-      local fake_vim = fake_transport(response)
+      local fake_vim = fake_herdr({ neighbor_response = response })
 
       with_vim(fake_vim, function()
         local pane_id, err = herdr.neighbor("up")
 
         test.equal(pane_id, nil)
-        test.truthy(contains(err, "no adjacent Herdr pane"))
+        test.contains(err, "no adjacent Herdr pane")
       end)
     end
   end)
@@ -198,16 +169,16 @@ test.describe("Herdr transport neighbor lookup", function()
       local pane_id, err = herdr.neighbor("left")
 
       test.equal(pane_id, nil)
-      test.truthy(contains(err, "exit code 1"))
-      test.truthy(contains(err, "source pane is invalid"))
-      test.truthy(contains(err, "pane_not_found"))
+      test.contains(err, "exit code 1")
+      test.contains(err, "source pane is invalid")
+      test.contains(err, "pane_not_found")
     end)
   end)
 end)
 
 test.describe("Herdr transport send-text", function()
   test.it("resolves the neighbor and sends text as one argument", function()
-    local fake_vim, calls = fake_send_transport()
+    local fake_vim, calls = fake_herdr()
     local text = "@src/file.lua#L2-L4; printf hacked"
 
     with_vim(fake_vim, function()
@@ -228,33 +199,37 @@ test.describe("Herdr transport send-text", function()
   end)
 
   test.it("reports send-text CLI failures with useful details", function()
-    local fake_vim, calls = fake_send_transport({
-      code = 1,
-      stdout = "pane_not_found",
-      stderr = "destination pane is invalid\n",
+    local fake_vim, calls = fake_herdr({
+      send_result = {
+        code = 1,
+        stdout = "pane_not_found",
+        stderr = "destination pane is invalid\n",
+      },
     })
 
     with_vim(fake_vim, function()
       local sent, err = herdr.send("left", "@src/file.lua")
 
       test.equal(sent, false)
-      test.truthy(contains(err, "Herdr send-text failed"))
-      test.truthy(contains(err, "exit code 1"))
-      test.truthy(contains(err, "destination pane is invalid"))
-      test.truthy(contains(err, "pane_not_found"))
+      test.contains(err, "Herdr send-text failed")
+      test.contains(err, "exit code 1")
+      test.contains(err, "destination pane is invalid")
+      test.contains(err, "pane_not_found")
     end)
 
     test.equal(#calls, 2)
   end)
 
   test.it("does not send when no neighbor is found", function()
-    local fake_vim, calls = fake_transport({ result = { neighbor = {} } })
+    local fake_vim, calls = fake_herdr({
+      neighbor_response = { result = { neighbor = {} } },
+    })
 
     with_vim(fake_vim, function()
       local sent, err = herdr.send("up", "@src/file.lua")
 
       test.equal(sent, false)
-      test.truthy(contains(err, "no adjacent Herdr pane"))
+      test.contains(err, "no adjacent Herdr pane")
     end)
 
     test.equal(#calls, 1)
@@ -276,7 +251,7 @@ test.describe("Herdr transport send-text", function()
       local sent, err = herdr.send("right", nil)
 
       test.equal(sent, false)
-      test.truthy(contains(err, "requires text"))
+      test.contains(err, "requires text")
     end)
 
     test.equal(calls, 0)
