@@ -1,6 +1,8 @@
 package.path = "./lua/?.lua;./lua/?/init.lua;./?.lua;./?/init.lua;" .. package.path
 
 local test = require("tests.testlib")
+local errors = require("toss.errors")
+local result = require("toss.result")
 local toss = require("toss")
 local context = require("toss.context")
 local transports = require("toss.transports")
@@ -9,11 +11,11 @@ local herdr = transports.registry.herdr
 local function with_fake_context(callback)
   local previous_capture = context.capture
   rawset(context, "capture", function()
-    return {
+    return result.ok({
       path = "src/domain/user.lua",
       start_line = nil,
       end_line = nil,
-    }
+    })
   end)
 
   local ok, err = xpcall(callback, debug.traceback)
@@ -28,7 +30,7 @@ local function with_notifications(callback)
   local previous_vim = _G.vim
   local notifications = {}
   _G.vim = {
-    log = { levels = { INFO = "info" } },
+    log = { levels = { WARN = "warn", ERROR = "error" } },
     notify = function(message, level)
       notifications[#notifications + 1] = { message = message, level = level }
     end,
@@ -84,7 +86,14 @@ end
 
 local function with_herdr_send(fake_send, callback)
   local previous_send = herdr.send
-  herdr.send = fake_send
+  herdr.send = function(direction, text)
+    local sent = fake_send(direction, text)
+    if sent == true then
+      return result.ok()
+    end
+
+    return sent
+  end
 
   local ok, err = xpcall(callback, debug.traceback)
   herdr.send = previous_send
@@ -103,6 +112,20 @@ test.describe("toss setup", function()
 
     test.equal(toss.config.first, true)
     test.equal(toss.config.second, "value")
+  end)
+
+  test.it("notifies for invalid setup options", function()
+    toss.config = {}
+
+    ---@type any
+    local invalid_options = "enabled"
+    local notifications = with_notifications(function()
+      toss.setup(invalid_options)
+    end)
+
+    test.equal(#notifications, 1)
+    test.equal(notifications[1].message, "toss: setup options must be a table")
+    test.equal(notifications[1].level, "error")
   end)
 
   test.it("does not create mappings unless enabled", function()
@@ -137,6 +160,18 @@ test.describe("toss setup", function()
       test.equal(calls[index].callback, toss[mapping.direction])
       test.equal(calls[index].options.silent, true)
     end
+  end)
+
+  test.it("notifies when mapping setup fails", function()
+    toss.config = {}
+
+    local notifications = with_notifications(function()
+      toss.setup({ mappings = true })
+    end)
+
+    test.equal(#notifications, 1)
+    test.equal(notifications[1].message, "toss: keymap API is unavailable")
+    test.equal(notifications[1].level, "error")
   end)
 
   test.it("allows direction keys to be overridden", function()
@@ -187,6 +222,7 @@ test.describe("toss transport configuration", function()
 
     test.equal(#notifications, 1)
     test.equal(notifications[1].message, "toss: unknown transport: tmux")
+    test.equal(notifications[1].level, "error")
   end)
 end)
 
@@ -227,6 +263,7 @@ test.describe("toss automatic transport selection", function()
 
     test.equal(#notifications, 1)
     test.equal(notifications[1].message, "toss: no transport is available")
+    test.equal(notifications[1].level, "warn")
   end)
 
   test.it("checks registered transports in deterministic order", function()
@@ -251,14 +288,14 @@ test.describe("toss automatic transport selection", function()
     transports.registry.first = first_transport
     transports.registry.second = second_transport
 
-    local selected, err = transports.resolve("auto")
+    local selection_result = transports.resolve("auto")
 
     transports.priorities = previous_priorities
     transports.registry.first = previous_first
     transports.registry.second = previous_second
 
-    test.equal(err, nil)
-    test.equal(selected, second_transport)
+    test.equal(selection_result.kind, "ok")
+    test.equal(selection_result.value, second_transport)
     test.equal(checks[1], "first")
     test.equal(checks[2], "second")
   end)
@@ -272,7 +309,7 @@ test.describe("toss directions", function()
       transport = {
         send = function(direction, text)
           calls[#calls + 1] = { direction = direction, text = text }
-          return true
+          return result.ok()
         end,
       },
     })
@@ -292,6 +329,34 @@ test.describe("toss directions", function()
     end
   end)
 
+  test.it("notifies unsupported context as a warning and does not send", function()
+    local send_calls = 0
+    local previous_capture = context.capture
+    rawset(context, "capture", function()
+      return result.err(errors.buffer_not_file())
+    end)
+
+    toss.config = {
+      transport = {
+        send = function()
+          send_calls = send_calls + 1
+          return result.ok()
+        end,
+      },
+    }
+
+    local notifications = with_notifications(function()
+      test.equal(toss.left(), false)
+    end)
+
+    rawset(context, "capture", previous_capture)
+
+    test.equal(send_calls, 0)
+    test.equal(#notifications, 1)
+    test.equal(notifications[1].message, "toss: current buffer is not a file")
+    test.equal(notifications[1].level, "warn")
+  end)
+
   test.it("fails gracefully when no transport is configured", function()
     toss.config = {}
 
@@ -301,6 +366,7 @@ test.describe("toss directions", function()
 
     test.equal(#notifications, 1)
     test.equal(notifications[1].message, "toss: transport is not configured")
+    test.equal(notifications[1].level, "error")
   end)
 
   test.it("fails gracefully when the configured transport is invalid", function()
@@ -315,6 +381,7 @@ test.describe("toss directions", function()
 
     test.equal(#notifications, 1)
     test.equal(notifications[1].message, "toss: transport must provide send(direction, text)")
+    test.equal(notifications[1].level, "error")
   end)
 end)
 

@@ -2,6 +2,7 @@ package.path = "./lua/?.lua;./lua/?/init.lua;./?.lua;./?/init.lua;" .. package.p
 vim.opt.rtp:prepend(vim.fn.getcwd())
 
 local test = require("tests.testlib")
+local errors = require("toss.errors")
 local context = require("toss.context")
 local project_root = require("toss.context.root")
 
@@ -31,12 +32,21 @@ local function edit(path)
   vim.cmd("edit " .. vim.fn.fnameescape(path))
 end
 
+local function capture_success()
+  local capture_result = context.capture()
+
+  test.equal(capture_result.kind, "ok")
+  return assert(capture_result.value)
+end
+
 local function assert_failure(message)
-  local value, err = context.capture()
-  test.equal(value, nil)
-  test.truthy(type(err) == "string")
-  if type(message) == "string" and type(err) == "string" then
-    test.truthy(string.find(err, message, 1, true) ~= nil)
+  local capture_result = context.capture()
+
+  test.equal(capture_result.kind, "err")
+  local err = capture_result.error
+  test.truthy(errors.is(err))
+  if type(message) == "string" then
+    test.truthy(string.find(errors.message(err), message, 1, true) ~= nil)
   end
 end
 
@@ -48,9 +58,9 @@ end
 local function capture_selection(keys)
   edit(visual_path)
   vim.cmd("normal! " .. keys)
-  local value, err = context.capture()
+  local capture_result = context.capture()
   leave_visual_mode()
-  return value, err
+  return capture_result
 end
 
 test.describe("context capture", function()
@@ -58,50 +68,48 @@ test.describe("context capture", function()
     edit(inside_path)
     vim.api.nvim_win_set_cursor(0, { 2, 0 })
 
-    local value, err = context.capture()
+    local value = capture_success()
 
-    test.equal(err, nil)
-    assert(value, err)
     test.equal(value.path, ".toss-context-fixture")
     test.equal(value.start_line, nil)
     test.equal(value.end_line, nil)
   end)
 
   test.it("captures the inclusive characterwise visual line range", function()
-    local value, err = capture_selection("ggvjj")
+    local capture_result = capture_selection("ggvjj")
 
-    test.equal(err, nil)
-    assert(value, err)
+    test.equal(capture_result.kind, "ok")
+    local value = assert(capture_result.value)
     test.equal(value.path, ".toss-visual-fixture")
     test.equal(value.start_line, 1)
     test.equal(value.end_line, 3)
   end)
 
   test.it("captures the inclusive linewise visual line range", function()
-    local value, err = capture_selection("ggVjj")
+    local capture_result = capture_selection("ggVjj")
 
-    test.equal(err, nil)
-    assert(value, err)
+    test.equal(capture_result.kind, "ok")
+    local value = assert(capture_result.value)
     test.equal(value.path, ".toss-visual-fixture")
     test.equal(value.start_line, 1)
     test.equal(value.end_line, 3)
   end)
 
   test.it("captures the inclusive blockwise visual line range", function()
-    local value, err = capture_selection("gg" .. string.char(22) .. "jj")
+    local capture_result = capture_selection("gg" .. string.char(22) .. "jj")
 
-    test.equal(err, nil)
-    assert(value, err)
+    test.equal(capture_result.kind, "ok")
+    local value = assert(capture_result.value)
     test.equal(value.path, ".toss-visual-fixture")
     test.equal(value.start_line, 1)
     test.equal(value.end_line, 3)
   end)
 
   test.it("normalizes a reverse visual selection", function()
-    local value, err = capture_selection("3Gvkk")
+    local capture_result = capture_selection("3Gvkk")
 
-    test.equal(err, nil)
-    assert(value, err)
+    test.equal(capture_result.kind, "ok")
+    local value = assert(capture_result.value)
     test.equal(value.path, ".toss-visual-fixture")
     test.equal(value.start_line, 1)
     test.equal(value.end_line, 3)
@@ -110,20 +118,16 @@ test.describe("context capture", function()
   test.it("prefers the .git ancestor over the working directory", function()
     edit(repository_path)
 
-    local value, err = context.capture()
+    local value = capture_success()
 
-    test.equal(err, nil)
-    assert(value, err)
     test.equal(value.path, "nested.txt")
   end)
 
   test.it("uses a package marker before the working directory", function()
     edit(marker_path)
 
-    local value, err = context.capture()
+    local value = capture_success()
 
-    test.equal(err, nil)
-    assert(value, err)
     test.equal(value.path, "src/marker.txt")
   end)
 
@@ -132,12 +136,10 @@ test.describe("context capture", function()
     vim.cmd("lcd " .. vim.fn.fnameescape(fallback_root))
     edit(fallback_path)
 
-    local value, err = context.capture()
+    local value = capture_success()
 
     vim.cmd("lcd " .. vim.fn.fnameescape(original_directory))
 
-    test.equal(err, nil)
-    assert(value, err)
     test.equal(value.path, "fallback.txt")
   end)
 
@@ -155,10 +157,8 @@ test.describe("context capture", function()
   test.it("uses an absolute path for a file outside the project root", function()
     edit(outside_path)
 
-    local value, err = context.capture()
+    local value = capture_success()
 
-    test.equal(err, nil)
-    assert(value, err)
     test.equal(value.path, outside_path)
     test.equal(value.start_line, nil)
     test.equal(value.end_line, nil)
@@ -172,12 +172,10 @@ test.describe("context capture", function()
       return nil
     end)
 
-    local value, err = context.capture()
+    local value = capture_success()
 
     rawset(project_root, "resolve", previous_resolve)
 
-    test.equal(err, nil)
-    assert(value, err)
     test.equal(value.path, inside_path)
   end)
 end)

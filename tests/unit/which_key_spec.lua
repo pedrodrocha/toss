@@ -1,6 +1,7 @@
 package.path = "./lua/?.lua;./lua/?/init.lua;./?.lua;./?/init.lua;" .. package.path
 
 local test = require("tests.testlib")
+local errors = require("toss.errors")
 local which_key = require("toss.which_key")
 
 local function with_which_key(loader, callback)
@@ -31,10 +32,9 @@ test.describe("toss which-key integration", function()
         end,
       }
     end, function()
-      local ok, err = which_key.setup(true)
+      local setup_result = which_key.setup(true)
 
-      test.equal(ok, true)
-      test.equal(err, nil)
+      test.equal(setup_result.kind, "ok")
     end)
 
     test.equal(registration[1][1], "<leader>t")
@@ -44,14 +44,31 @@ test.describe("toss which-key integration", function()
     test.equal(registration[1].mode[2], "x")
   end)
 
+  test.it("returns a warning when registration fails", function()
+    with_which_key(function()
+      return {
+        add = function()
+          error("registration exploded")
+        end,
+      }
+    end, function()
+      local setup_result = which_key.setup(true)
+
+      test.equal(setup_result.kind, "err")
+      local err = setup_result.error
+      test.contains(errors.message(err), "which-key registration failed: ")
+      test.contains(errors.message(err), "registration exploded")
+      test.equal(err.level, "warn")
+    end)
+  end)
+
   test.it("continues when which-key is unavailable", function()
     with_which_key(function()
       error("module not found")
     end, function()
-      local ok, err = which_key.setup(true)
+      local setup_result = which_key.setup(true)
 
-      test.equal(ok, true)
-      test.equal(err, nil)
+      test.equal(setup_result.kind, "ok")
     end)
   end)
 
@@ -62,10 +79,9 @@ test.describe("toss which-key integration", function()
       loaded = true
       error("which-key should not be loaded")
     end, function()
-      local ok, err = which_key.setup(false)
+      local setup_result = which_key.setup(false)
 
-      test.equal(ok, true)
-      test.equal(err, nil)
+      test.equal(setup_result.kind, "ok")
     end)
 
     test.equal(loaded, false)

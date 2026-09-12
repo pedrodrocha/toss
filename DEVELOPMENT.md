@@ -40,7 +40,7 @@ If which-key is installed, the development setup labels `<leader>t` as `󰧑 tos
 Outside Herdr, use an injected transport for a local check:
 
 ```vim
-:lua require("toss").setup({ transport = { send = function(direction, text) print(direction .. ": " .. text); return true end } })
+:lua local result = require("toss.result"); require("toss").setup({ transport = { send = function(direction, text) print(direction .. ": " .. text); return result.ok() end } })
 :lua require("toss").right()
 ```
 

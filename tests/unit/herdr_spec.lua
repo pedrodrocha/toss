@@ -1,6 +1,7 @@
 package.path = "./lua/?.lua;./lua/?/init.lua;./?.lua;./?/init.lua;" .. package.path
 
 local test = require("tests.testlib")
+local errors = require("toss.errors")
 local herdr = require("toss.transports.herdr")
 
 local function with_vim(fake_vim, callback)
@@ -13,6 +14,16 @@ local function with_vim(fake_vim, callback)
   if not ok then
     error(err, 0)
   end
+end
+
+local function assert_success(outcome)
+  test.equal(outcome.kind, "ok")
+  return assert(outcome.value)
+end
+
+local function assert_failure(outcome)
+  test.equal(outcome.kind, "err")
+  return assert(outcome.error)
 end
 
 local function fake_herdr(options)
@@ -99,10 +110,9 @@ test.describe("Herdr transport neighbor lookup", function()
         system_calls = system_calls + 1
       end,
     }, function()
-      local pane_id, err = herdr.neighbor("right")
+      local err = assert_failure(herdr.neighbor("right"))
 
-      test.equal(pane_id, nil)
-      test.contains(err, "requires Neovim to run inside Herdr")
+      test.contains(errors.message(err), "requires Neovim to run inside Herdr")
     end)
 
     test.equal(system_calls, 0)
@@ -115,10 +125,9 @@ test.describe("Herdr transport neighbor lookup", function()
         error("the CLI should not run")
       end,
     }, function()
-      local pane_id, err = herdr.neighbor("left")
+      local err = assert_failure(herdr.neighbor("left"))
 
-      test.equal(pane_id, nil)
-      test.contains(err, "requires HERDR_PANE_ID")
+      test.contains(errors.message(err), "requires HERDR_PANE_ID")
     end)
   end)
 
@@ -134,9 +143,8 @@ test.describe("Herdr transport neighbor lookup", function()
     })
 
     with_vim(fake_vim, function()
-      local pane_id, err = herdr.neighbor("down")
+      local pane_id = assert_success(herdr.neighbor("down"))
 
-      test.equal(err, nil)
       test.equal(pane_id, "destination-pane")
     end)
 
@@ -165,12 +173,60 @@ test.describe("Herdr transport neighbor lookup", function()
       local fake_vim = fake_herdr({ neighbor_response = response })
 
       with_vim(fake_vim, function()
-        local pane_id, err = herdr.neighbor("up")
+        local err = assert_failure(herdr.neighbor("up"))
 
-        test.equal(pane_id, nil)
-        test.contains(err, "no adjacent Herdr pane")
+        test.contains(errors.message(err), "no adjacent Herdr pane")
       end)
     end
+  end)
+
+  test.it("reports Herdr process spawn failures without panicking", function()
+    local fake_vim = {
+      env = {
+        HERDR_ENV = "1",
+        HERDR_PANE_ID = "source-pane",
+      },
+      system = function()
+        error("herdr executable not found")
+      end,
+    }
+
+    with_vim(fake_vim, function()
+      local err = assert_failure(herdr.neighbor("left"))
+
+      test.equal(err.code, errors.codes.herdr_spawn)
+      test.contains(errors.message(err), "could not start Herdr neighbor lookup")
+      test.contains(errors.message(err), "herdr executable not found")
+    end)
+  end)
+
+  test.it("reports malformed neighbor responses without panicking", function()
+    local fake_vim = {
+      env = {
+        HERDR_ENV = "1",
+        HERDR_PANE_ID = "source-pane",
+      },
+      json = {
+        decode = function()
+          error("invalid JSON")
+        end,
+      },
+      system = function()
+        return {
+          wait = function()
+            return { code = 0, stdout = "invalid response", stderr = "" }
+          end,
+        }
+      end,
+    }
+
+    with_vim(fake_vim, function()
+      local err = assert_failure(herdr.neighbor("left"))
+
+      test.equal(err.code, errors.codes.herdr_response)
+      test.contains(errors.message(err), "could not decode Herdr neighbor response")
+      test.contains(errors.message(err), "invalid JSON")
+    end)
   end)
 
   test.it("includes CLI output when the neighbor command fails", function()
@@ -193,12 +249,11 @@ test.describe("Herdr transport neighbor lookup", function()
     }
 
     with_vim(fake_vim, function()
-      local pane_id, err = herdr.neighbor("left")
+      local err = assert_failure(herdr.neighbor("left"))
 
-      test.equal(pane_id, nil)
-      test.contains(err, "exit code 1")
-      test.contains(err, "source pane is invalid")
-      test.contains(err, "pane_not_found")
+      test.contains(errors.message(err), "exit code 1")
+      test.contains(errors.message(err), "source pane is invalid")
+      test.contains(errors.message(err), "pane_not_found")
     end)
   end)
 end)
@@ -209,10 +264,9 @@ test.describe("Herdr transport send-text", function()
     local text = "@src/file.lua#L2-L4; printf hacked"
 
     with_vim(fake_vim, function()
-      local sent, err = herdr.send("right", text)
+      local send_result = herdr.send("right", text)
 
-      test.equal(sent, true)
-      test.equal(err, nil)
+      test.equal(send_result.kind, "ok")
     end)
 
     test.equal(#calls, 2)
@@ -235,13 +289,12 @@ test.describe("Herdr transport send-text", function()
     })
 
     with_vim(fake_vim, function()
-      local sent, err = herdr.send("left", "@src/file.lua")
+      local err = assert_failure(herdr.send("left", "@src/file.lua"))
 
-      test.equal(sent, false)
-      test.contains(err, "Herdr send-text failed")
-      test.contains(err, "exit code 1")
-      test.contains(err, "destination pane is invalid")
-      test.contains(err, "pane_not_found")
+      test.contains(errors.message(err), "Herdr send-text failed")
+      test.contains(errors.message(err), "exit code 1")
+      test.contains(errors.message(err), "destination pane is invalid")
+      test.contains(errors.message(err), "pane_not_found")
     end)
 
     test.equal(#calls, 2)
@@ -253,10 +306,9 @@ test.describe("Herdr transport send-text", function()
     })
 
     with_vim(fake_vim, function()
-      local sent, err = herdr.send("up", "@src/file.lua")
+      local err = assert_failure(herdr.send("up", "@src/file.lua"))
 
-      test.equal(sent, false)
-      test.contains(err, "no adjacent Herdr pane")
+      test.contains(errors.message(err), "no adjacent Herdr pane")
     end)
 
     test.equal(#calls, 1)
@@ -277,10 +329,9 @@ test.describe("Herdr transport send-text", function()
     with_vim(fake_vim, function()
       ---@type any
       local invalid_text = nil
-      local sent, err = herdr.send("right", invalid_text)
+      local err = assert_failure(herdr.send("right", invalid_text))
 
-      test.equal(sent, false)
-      test.contains(err, "requires text")
+      test.contains(errors.message(err), "requires text")
     end)
 
     test.equal(calls, 0)

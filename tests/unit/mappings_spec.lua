@@ -1,6 +1,7 @@
 package.path = "./lua/?.lua;./lua/?/init.lua;./?.lua;./?/init.lua;" .. package.path
 
 local test = require("tests.testlib")
+local errors = require("toss.errors")
 local mappings = require("toss.mappings")
 
 local function with_vim(fake_vim, callback)
@@ -33,10 +34,9 @@ test.describe("toss mappings", function()
         end,
       },
     }, function()
-      local ok, err = mappings.setup(false, callbacks)
+      local setup_result = mappings.setup(false, callbacks)
 
-      test.equal(ok, true)
-      test.equal(err, nil)
+      test.equal(setup_result.kind, "ok")
     end)
 
     test.equal(calls, 0)
@@ -57,10 +57,9 @@ test.describe("toss mappings", function()
         end,
       },
     }, function()
-      local ok, err = mappings.setup(true, callbacks)
+      local setup_result = mappings.setup(true, callbacks)
 
-      test.equal(ok, true)
-      test.equal(err, nil)
+      test.equal(setup_result.kind, "ok")
     end)
 
     local expected = {
@@ -92,10 +91,9 @@ test.describe("toss mappings", function()
         end,
       },
     }, function()
-      local ok, err = mappings.setup({ left = "<leader>tL", down = false }, callbacks)
+      local setup_result = mappings.setup({ left = "<leader>tL", down = false }, callbacks)
 
-      test.equal(ok, true)
-      test.equal(err, nil)
+      test.equal(setup_result.kind, "ok")
     end)
 
     test.equal(#calls, 3)
@@ -107,15 +105,15 @@ test.describe("toss mappings", function()
   test.it("returns configuration and API errors without notifying", function()
     ---@type any
     local invalid_configuration = "enabled"
-    local ok, err = mappings.setup(invalid_configuration, callbacks)
-    test.equal(ok, false)
-    test.equal(err, "mappings must be true or a table")
+    local configuration_result = mappings.setup(invalid_configuration, callbacks)
+    test.equal(configuration_result.kind, "err")
+    test.equal(errors.message(configuration_result.error), "mappings must be true or a table")
 
     with_vim({}, function()
-      ok, err = mappings.setup(true, callbacks)
+      local setup_result = mappings.setup(true, callbacks)
 
-      test.equal(ok, false)
-      test.equal(err, "keymap API is unavailable")
+      test.equal(setup_result.kind, "err")
+      test.equal(errors.message(setup_result.error), "keymap API is unavailable")
     end)
   end)
 end)
