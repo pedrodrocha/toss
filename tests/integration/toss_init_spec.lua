@@ -64,10 +64,10 @@ test.describe("toss transport configuration", function()
   test.it("selects Herdr by name through the public API", function()
     local calls = {}
     local previous_send = transports.registry.herdr.send
-    transports.registry.herdr.send = function(direction, text)
+    rawset(transports.registry.herdr, "send", function(direction, text)
       calls[#calls + 1] = { direction = direction, text = text }
       return true
-    end
+    end)
 
     toss.config = {}
     toss.setup({ transport = "herdr" })
@@ -84,10 +84,10 @@ test.describe("toss transport configuration", function()
   test.it("auto-detects Herdr through the public API", function()
     local calls = {}
     local previous_send = transports.registry.herdr.send
-    transports.registry.herdr.send = function(direction, text)
+    rawset(transports.registry.herdr, "send", function(direction, text)
       calls[#calls + 1] = { direction = direction, text = text }
       return true
-    end
+    end)
 
     toss.config = {}
     toss.setup({ transport = "auto" })

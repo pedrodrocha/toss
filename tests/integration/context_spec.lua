@@ -7,6 +7,7 @@ local project_root = require("toss.context.root")
 
 local root = vim.fn.getcwd()
 local inside_path = root .. "/.toss-context-fixture"
+local visual_path = root .. "/.toss-visual-fixture"
 local repository_root = root .. "/.toss-context-repository"
 local repository_path = repository_root .. "/nested.txt"
 local marker_root = vim.fn.tempname()
@@ -16,6 +17,7 @@ local fallback_path = fallback_root .. "/fallback.txt"
 local outside_path = vim.fn.tempname()
 
 vim.fn.writefile({ "first line", "second line" }, inside_path)
+vim.fn.writefile({ "one", "two", "three", "four", "five" }, visual_path)
 vim.fn.mkdir(repository_root .. "/.git", "p")
 vim.fn.writefile({ "nested repository" }, repository_path)
 vim.fn.mkdir(marker_root .. "/src", "p")
@@ -33,9 +35,22 @@ local function assert_failure(message)
   local value, err = context.capture()
   test.equal(value, nil)
   test.truthy(type(err) == "string")
-  if message then
+  if type(message) == "string" and type(err) == "string" then
     test.truthy(string.find(err, message, 1, true) ~= nil)
   end
+end
+
+local function leave_visual_mode()
+  local escape = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
+  vim.api.nvim_feedkeys(escape, "nx", false)
+end
+
+local function capture_selection(keys)
+  edit(visual_path)
+  vim.cmd("normal! " .. keys)
+  local value, err = context.capture()
+  leave_visual_mode()
+  return value, err
 end
 
 test.describe("context capture", function()
@@ -46,9 +61,50 @@ test.describe("context capture", function()
     local value, err = context.capture()
 
     test.equal(err, nil)
+    assert(value, err)
     test.equal(value.path, ".toss-context-fixture")
     test.equal(value.start_line, nil)
     test.equal(value.end_line, nil)
+  end)
+
+  test.it("captures the inclusive characterwise visual line range", function()
+    local value, err = capture_selection("ggvjj")
+
+    test.equal(err, nil)
+    assert(value, err)
+    test.equal(value.path, ".toss-visual-fixture")
+    test.equal(value.start_line, 1)
+    test.equal(value.end_line, 3)
+  end)
+
+  test.it("captures the inclusive linewise visual line range", function()
+    local value, err = capture_selection("ggVjj")
+
+    test.equal(err, nil)
+    assert(value, err)
+    test.equal(value.path, ".toss-visual-fixture")
+    test.equal(value.start_line, 1)
+    test.equal(value.end_line, 3)
+  end)
+
+  test.it("captures the inclusive blockwise visual line range", function()
+    local value, err = capture_selection("gg" .. string.char(22) .. "jj")
+
+    test.equal(err, nil)
+    assert(value, err)
+    test.equal(value.path, ".toss-visual-fixture")
+    test.equal(value.start_line, 1)
+    test.equal(value.end_line, 3)
+  end)
+
+  test.it("normalizes a reverse visual selection", function()
+    local value, err = capture_selection("3Gvkk")
+
+    test.equal(err, nil)
+    assert(value, err)
+    test.equal(value.path, ".toss-visual-fixture")
+    test.equal(value.start_line, 1)
+    test.equal(value.end_line, 3)
   end)
 
   test.it("prefers the .git ancestor over the working directory", function()
@@ -57,6 +113,7 @@ test.describe("context capture", function()
     local value, err = context.capture()
 
     test.equal(err, nil)
+    assert(value, err)
     test.equal(value.path, "nested.txt")
   end)
 
@@ -66,6 +123,7 @@ test.describe("context capture", function()
     local value, err = context.capture()
 
     test.equal(err, nil)
+    assert(value, err)
     test.equal(value.path, "src/marker.txt")
   end)
 
@@ -79,6 +137,7 @@ test.describe("context capture", function()
     vim.cmd("lcd " .. vim.fn.fnameescape(original_directory))
 
     test.equal(err, nil)
+    assert(value, err)
     test.equal(value.path, "fallback.txt")
   end)
 
@@ -99,6 +158,7 @@ test.describe("context capture", function()
     local value, err = context.capture()
 
     test.equal(err, nil)
+    assert(value, err)
     test.equal(value.path, outside_path)
     test.equal(value.start_line, nil)
     test.equal(value.end_line, nil)
@@ -108,20 +168,22 @@ test.describe("context capture", function()
     edit(inside_path)
 
     local previous_resolve = project_root.resolve
-    project_root.resolve = function()
+    rawset(project_root, "resolve", function()
       return nil
-    end
+    end)
 
     local value, err = context.capture()
 
-    project_root.resolve = previous_resolve
+    rawset(project_root, "resolve", previous_resolve)
 
     test.equal(err, nil)
+    assert(value, err)
     test.equal(value.path, inside_path)
   end)
 end)
 
 vim.fn.delete(inside_path)
+vim.fn.delete(visual_path)
 vim.fn.delete(repository_root, "rf")
 vim.fn.delete(marker_root, "rf")
 vim.fn.delete(fallback_root, "rf")

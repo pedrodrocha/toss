@@ -26,6 +26,18 @@ local function resolve_path(root, absolute_path)
 	return absolute_path
 end
 
+local function is_visual_mode()
+	local mode = vim.api.nvim_get_mode().mode
+	return mode == "v" or mode == "V" or mode == "\022"
+end
+
+local function visual_range()
+	local visual_start = vim.fn.getpos("v")
+	local visual_end = vim.fn.getpos(".")
+
+	return math.min(visual_start[2], visual_end[2]), math.max(visual_start[2], visual_end[2])
+end
+
 function M.capture()
 	local _, err = assert_buffer_is_file()
 	if err then
@@ -41,11 +53,16 @@ function M.capture()
 
 	local root = project_root.resolve(0)
 	local path = resolve_path(root, absolute_path)
+	local start_line, end_line
+
+	if is_visual_mode() then
+		start_line, end_line = visual_range()
+	end
 
 	return {
 		path = path,
-		start_line = nil,
-		end_line = nil,
+		start_line = start_line,
+		end_line = end_line,
 	}
 end
 
