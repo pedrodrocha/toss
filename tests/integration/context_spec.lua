@@ -3,7 +3,7 @@ vim.opt.rtp:prepend(vim.fn.getcwd())
 
 local test = require("tests.testlib")
 local context = require("toss.context")
-local project_root = require("toss.context.project_root")
+local project_root = require("toss.context.root")
 
 local root = vim.fn.getcwd()
 local inside_path = root .. "/.toss-context-fixture"

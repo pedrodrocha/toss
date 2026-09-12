@@ -1,7 +1,7 @@
 package.path = "./lua/?.lua;./lua/?/init.lua;./?.lua;./?/init.lua;" .. package.path
 
 local test = require("tests.testlib")
-local project_root = require("toss.context.project_root")
+local project_root = require("toss.context.root")
 
 local expected_markers = {
   ".git",

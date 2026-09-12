@@ -1,5 +1,5 @@
 local M = {}
-local project_root = require("toss.context.project_root")
+local project_root = require("toss.context.root")
 
 local function invalid(message)
   return nil, message
