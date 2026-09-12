@@ -16,7 +16,10 @@ package.path = table.concat({
   package.path,
 }, ";")
 
+local toss = require("toss")
+toss.setup({ transport = "auto" })
+
 vim.notify(
-  "toss: development source loaded from " .. repository_root,
+  "toss: development source loaded from " .. repository_root .. " (transport: auto)",
   vim.log.levels.INFO
 )

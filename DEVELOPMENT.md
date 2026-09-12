@@ -16,7 +16,7 @@ If Neovim's working directory is elsewhere, use the absolute path:
 :luafile /path/to/toss.nvim/dev/init.lua
 ```
 
-The development file prepends this checkout to Neovim's runtime and Lua package paths, then clears cached `toss` modules. A subsequent `require("toss")` therefore uses the working tree even if an installed copy was loaded earlier.
+The development file prepends this checkout to Neovim's runtime and Lua package paths, clears cached `toss` modules, and configures `transport = "auto"`. A subsequent `require("toss")` therefore uses the working tree even if an installed copy was loaded earlier.
 
 This only changes the current Neovim process. It does not modify installed files or the normal Neovim configuration. Restart Neovim to return to the normal installed setup.
 
@@ -39,12 +39,13 @@ Open a project file and use an injected transport for a local, external-process-
 :lua require("toss").right()
 ```
 
-When Neovim is running inside Herdr, the `HERDR_*` environment is preserved, so the real transport can be exercised with:
+When Neovim is running inside Herdr, the `HERDR_*` environment is preserved and the development setup automatically selects Herdr, so the real transport can be exercised with:
 
 ```vim
-:lua require("toss").setup({ transport = "herdr" })
 :lua require("toss").right()
 ```
+
+Outside Herdr, `transport = "auto"` reports that no transport is available. The local injected transport above can be used for external-process-free checks.
 
 After editing Lua files, run `:luafile dev/init.lua` again before testing. This clears the cached `toss` modules and loads the latest working-tree code.
 
