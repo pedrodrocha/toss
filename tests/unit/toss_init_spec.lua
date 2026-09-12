@@ -8,13 +8,13 @@ local herdr = transports.registry.herdr
 
 local function with_fake_context(callback)
   local previous_capture = context.capture
-  context.capture = function()
+  rawset(context, "capture", function()
     return {
       path = "src/domain/user.lua",
       start_line = nil,
       end_line = nil,
     }
-  end
+  end)
 
   local ok, err = xpcall(callback, debug.traceback)
   context.capture = previous_capture
