@@ -20,9 +20,9 @@ test.run("public direction stubs notify in Neovim", function()
   local toss = require("toss")
   local notifications = {}
   local previous_notify = vim.notify
-  vim.notify = function(message, level)
+  rawset(vim, "notify", function(message, level)
     notifications[#notifications + 1] = { message = message, level = level }
-  end
+  end)
 
   local results = {
     toss.left(),
@@ -31,7 +31,7 @@ test.run("public direction stubs notify in Neovim", function()
     toss.right(),
   }
 
-  vim.notify = previous_notify
+  rawset(vim, "notify", previous_notify)
 
   for _, result in ipairs(results) do
     test.equal(result, false)
