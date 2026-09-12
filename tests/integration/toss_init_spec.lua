@@ -3,6 +3,7 @@ vim.opt.rtp:prepend(vim.fn.getcwd())
 
 local test = require("tests.testlib")
 local toss = require("toss")
+local transports = require("toss.transports")
 
 local fixture_path = vim.fn.getcwd() .. "/.toss-init-fixture"
 vim.fn.writefile({ "first line", "second line" }, fixture_path)
@@ -38,6 +39,28 @@ test.describe("toss directions", function()
       test.equal(calls[index].direction, direction)
       test.equal(calls[index].text, "@.toss-init-fixture")
     end
+  end)
+end)
+
+test.describe("toss transport configuration", function()
+  test.it("selects Herdr by name through the public API", function()
+    local calls = {}
+    local previous_send = transports.herdr.send
+    transports.herdr.send = function(direction, text)
+      calls[#calls + 1] = { direction = direction, text = text }
+      return true
+    end
+
+    toss.config = {}
+    toss.setup({ transport = "herdr" })
+    local result = toss.right()
+
+    transports.herdr.send = previous_send
+
+    test.equal(result, true)
+    test.equal(#calls, 1)
+    test.equal(calls[1].direction, "right")
+    test.equal(calls[1].text, "@.toss-init-fixture")
   end)
 end)
 

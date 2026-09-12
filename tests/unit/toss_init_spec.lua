@@ -3,6 +3,8 @@ package.path = "./lua/?.lua;./lua/?/init.lua;./?.lua;./?/init.lua;" .. package.p
 local test = require("tests.testlib")
 local toss = require("toss")
 local context = require("toss.context")
+local transports = require("toss.transports")
+local herdr = transports.herdr
 
 local function with_fake_context(callback)
   local previous_capture = context.capture
@@ -42,6 +44,18 @@ local function with_notifications(callback)
   return notifications
 end
 
+local function with_herdr_send(fake_send, callback)
+  local previous_send = herdr.send
+  herdr.send = fake_send
+
+  local ok, err = xpcall(callback, debug.traceback)
+  herdr.send = previous_send
+
+  if not ok then
+    error(err, 0)
+  end
+end
+
 test.describe("toss setup", function()
   test.it("merges configuration and returns the module", function()
     toss.config = {}
@@ -51,6 +65,39 @@ test.describe("toss setup", function()
 
     test.equal(toss.config.first, true)
     test.equal(toss.config.second, "value")
+  end)
+end)
+
+test.describe("toss transport configuration", function()
+  test.it("loads Herdr when configured by name", function()
+    local calls = {}
+    toss.config = {}
+    toss.setup({ transport = "herdr" })
+
+    with_herdr_send(function(direction, text)
+      calls[#calls + 1] = { direction = direction, text = text }
+      return true
+    end, function()
+      with_fake_context(function()
+        test.equal(toss.right(), true)
+      end)
+    end)
+
+    test.equal(#calls, 1)
+    test.equal(calls[1].direction, "right")
+    test.equal(calls[1].text, "@src/domain/user.lua")
+  end)
+
+  test.it("fails gracefully for an unknown transport name", function()
+    toss.config = {}
+    toss.setup({ transport = "tmux" })
+
+    local notifications = with_notifications(function()
+      test.equal(toss.left(), false)
+    end)
+
+    test.equal(#notifications, 1)
+    test.equal(notifications[1].message, "toss: unknown transport: tmux")
   end)
 end)
 

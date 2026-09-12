@@ -1,5 +1,6 @@
 local context = require("toss.context")
 local formatter = require("toss.formatter")
+local transports = require("toss.transports")
 
 local M = {
   config = {},
@@ -30,16 +31,25 @@ function M.setup(opts)
 end
 
 local function configured_transport()
-  local transport = M.config.transport
-  if type(transport) ~= "table" then
+  local configured = M.config.transport
+
+  if type(configured) == "string" then
+    local transport_name = configured
+    configured = transports[transport_name]
+    if not configured then
+      return nil, "unknown transport: " .. transport_name
+    end
+  end
+
+  if type(configured) ~= "table" then
     return nil, "transport is not configured"
   end
 
-  if type(transport.send) ~= "function" then
+  if type(configured.send) ~= "function" then
     return nil, "transport must provide send(direction, text)"
   end
 
-  return transport
+  return configured
 end
 
 local function run(direction)
