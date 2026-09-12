@@ -7,7 +7,6 @@
 
 ---@class TossRegisterContextModule
 ---@field setup fun(): TossResult<nil>
----@field record fun(event: table|nil, bufnr: integer|nil): TossResult<boolean>
 ---@field current fun(): TossResult<TossRegisterRecord>
 
 local errors = require("toss.errors")
@@ -133,7 +132,7 @@ end
 ---@param event table|nil
 ---@param bufnr integer|nil
 ---@return TossResult<boolean>
-function M.record(event, bufnr)
+local function record(event, bufnr)
   if not should_record(event) then
     return result.ok(false)
   end
@@ -216,7 +215,7 @@ function M.setup()
       local bufnr = type(args) == "table" and args.buf
       -- A failed observation should not interrupt the yank/delete/change that
       -- caused it. The next toss will use the last valid record, if any.
-      pcall(M.record, event, bufnr)
+      pcall(record, event, bufnr)
     end,
   })
   if not registered then
