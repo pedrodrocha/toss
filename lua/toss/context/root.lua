@@ -1,15 +1,26 @@
+---@alias TossRootStrategy fun(bufnr: integer): string|nil
+
+---@class TossProjectRoot
+---@field strategies TossRootStrategy[]
+---@field resolve fun(bufnr: integer|nil, strategies: TossRootStrategy[]|nil): string|nil
+
+---@type TossProjectRoot
 local M = {}
 
+---@param marker string
+---@return TossRootStrategy
 local function marker_ancestor(marker)
   return function(bufnr)
     return vim.fs.root(bufnr, marker)
   end
 end
 
+---@return string
 local function current_working_directory()
   return vim.fn.getcwd()
 end
 
+---@type TossRootStrategy[]
 M.strategies = {
   marker_ancestor(".git"),
   marker_ancestor(".hg"),
@@ -42,10 +53,15 @@ M.strategies = {
   current_working_directory,
 }
 
+---@param root string|nil
+---@return boolean
 local function valid_root(root)
   return type(root) == "string" and root ~= ""
 end
 
+---@param bufnr integer|nil
+---@param strategies TossRootStrategy[]|nil
+---@return string|nil
 function M.resolve(bufnr, strategies)
   bufnr = bufnr or 0
   strategies = strategies or M.strategies

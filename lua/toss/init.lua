@@ -19,13 +19,18 @@ local runner = require("toss.runner")
 
 ---@class Toss
 ---@field config TossConfig
+---@field setup fun(opts: TossSetupOptions|nil): Toss
+---@field left fun(): boolean
+---@field down fun(): boolean
+---@field up fun(): boolean
+---@field right fun(): boolean
 
 ---@class TossSetupOptions
 ---@field mappings boolean|TossMappings|nil
 ---@field transport string|TossTransport|nil
 
+---@type Toss
 local M = {
-  ---@type TossConfig
   config = {},
 }
 

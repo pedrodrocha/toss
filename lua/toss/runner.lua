@@ -2,6 +2,11 @@ local context = require("toss.context")
 local formatter = require("toss.formatter")
 local transports = require("toss.transports")
 
+---@class TossRunner
+---@field resolve_transport fun(config: TossConfig|nil): TossTransport|nil, string|nil
+---@field run fun(direction: TossDirection, config: TossConfig|nil): boolean, string|nil
+
+---@type TossRunner
 local M = {}
 
 ---@param config TossConfig|nil

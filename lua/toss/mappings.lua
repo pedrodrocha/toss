@@ -1,3 +1,8 @@
+---@class TossMappingModule
+---@field resolve fun(configured: boolean|TossMappings|nil): TossMappings|nil, string|nil
+---@field setup fun(configured: boolean|TossMappings|nil, callbacks: table<TossDirection, fun(): boolean>): boolean, string|nil
+
+---@type TossMappingModule
 local M = {}
 
 local mapping_order = { "left", "down", "up", "right" }

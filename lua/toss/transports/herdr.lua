@@ -1,5 +1,15 @@
+---@class TossCommandResult
+---@field code integer|nil
+---@field stdout string|nil
+---@field stderr string|nil
+
+---@class TossHerdrTransport : TossTransport
+---@field neighbor fun(direction: TossDirection): string|nil, string|nil
+
+---@type TossHerdrTransport
 local M = {}
 
+---@type table<TossDirection, boolean>
 local valid_directions = {
 	left = true,
 	down = true,
@@ -7,10 +17,14 @@ local valid_directions = {
 	right = true,
 }
 
+---@param value string
+---@return string
 local function trim(value)
 	return value:gsub("^%s+", ""):gsub("%s+$", "")
 end
 
+---@param result TossCommandResult
+---@return string
 local function command_detail(result)
 	local details = {}
 
@@ -26,6 +40,9 @@ local function command_detail(result)
 	return table.concat(details, " | ")
 end
 
+---@param result TossCommandResult
+---@param operation string
+---@return string
 local function command_failure(result, operation)
 	local message = operation .. " failed"
 	if result.code ~= nil then
@@ -40,6 +57,8 @@ local function command_failure(result, operation)
 	return message
 end
 
+---@param direction TossDirection
+---@return TossDirection|nil, string|nil
 local function validate_direction(direction)
 	if not valid_directions[direction] then
 		return nil, "invalid Herdr neighbor direction"
@@ -48,6 +67,7 @@ local function validate_direction(direction)
 	return direction
 end
 
+---@return string|nil, string|nil
 local function validate_environment()
 	if type(vim) ~= "table" or type(vim.env) ~= "table" or vim.env.HERDR_ENV ~= "1" then
 		return nil, "Herdr transport requires Neovim to run inside Herdr"
@@ -61,6 +81,9 @@ local function validate_environment()
 	return source_pane_id
 end
 
+---@param argv string[]
+---@param operation string
+---@return TossCommandResult|nil, string|nil
 local function run_command(argv, operation)
 	if type(vim.system) ~= "function" then
 		return nil, operation .. " requires Neovim's vim.system API"
@@ -91,6 +114,9 @@ local function run_command(argv, operation)
 	return result
 end
 
+---@param source_pane_id string
+---@param direction TossDirection
+---@return TossCommandResult|nil, string|nil
 local function run_neighbor(source_pane_id, direction)
 	return run_command({
 		"herdr",
@@ -103,6 +129,9 @@ local function run_neighbor(source_pane_id, direction)
 	}, "Herdr neighbor lookup")
 end
 
+---@param stdout string|nil
+---@param direction TossDirection
+---@return string|nil, string|nil
 local function decode_neighbor(stdout, direction)
 	if type(vim.json) ~= "table" or type(vim.json.decode) ~= "function" then
 		return nil, "Herdr neighbor lookup requires vim.json.decode"
@@ -124,6 +153,8 @@ local function decode_neighbor(stdout, direction)
 	return destination_pane_id
 end
 
+---@param direction TossDirection
+---@return string|nil, string|nil
 function M.neighbor(direction)
 	local direction_error
 	direction, direction_error = validate_direction(direction)
@@ -144,6 +175,9 @@ function M.neighbor(direction)
 	return decode_neighbor(result.stdout, direction)
 end
 
+---@param direction TossDirection
+---@param text string
+---@return boolean, string|nil
 function M.send(direction, text)
 	if type(text) ~= "string" then
 		return false, "Herdr send-text requires text"
@@ -168,6 +202,7 @@ function M.send(direction, text)
 	return true
 end
 
+---@return boolean
 function M.available()
 	local source_pane_id = validate_environment()
 	return source_pane_id ~= nil

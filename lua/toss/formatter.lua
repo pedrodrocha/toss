@@ -1,13 +1,23 @@
+---@class TossFormatter
+---@field format fun(ctx: TossContext|nil): string|nil, string|nil
+
+---@type TossFormatter
 local M = {}
 
+---@param message string
+---@return nil, string
 local function invalid(message)
   return nil, message
 end
 
+---@param value any
+---@return boolean
 local function is_positive_integer(value)
   return type(value) == "number" and value >= 1 and value % 1 == 0
 end
 
+---@param ctx TossContext|nil
+---@return string|nil, string|nil
 function M.format(ctx)
   if type(ctx) ~= "table" then
     return invalid("context must be a table")
