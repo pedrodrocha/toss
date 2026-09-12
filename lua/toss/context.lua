@@ -10,7 +10,7 @@ local function assert_buffer_is_file()
   end
 end
 
-local function assert_is_file_path(absolute_path)
+local function validate_file_path(absolute_path)
   if absolute_path == "" then
     return invalid("current buffer has no file path")
   end
@@ -24,7 +24,7 @@ function M.capture()
 
   local absolute_path = vim.api.nvim_buf_get_name(0)
 
-  _, err = assert_is_file_path(absolute_path)
+  _, err = validate_file_path(absolute_path)
   if err then
     return nil, err
   end
