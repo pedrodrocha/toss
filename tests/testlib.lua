@@ -87,7 +87,6 @@ function M.describe(name, suite)
 end
 
 function M.finish()
-  local total = M.passed + M.failures
   print(string.format("    Result: %d passed, %d failed", M.passed, M.failures))
   os.exit(M.failures == 0 and 0 or 1)
 end

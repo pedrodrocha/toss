@@ -4,7 +4,6 @@
 ---@field strategies TossRootStrategy[]
 ---@field resolve fun(bufnr: integer|nil, strategies: TossRootStrategy[]|nil): string|nil
 
----@type TossProjectRoot
 local M = {}
 
 ---@param marker string

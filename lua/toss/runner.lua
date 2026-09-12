@@ -6,7 +6,6 @@ local transports = require("toss.transports")
 ---@field resolve_transport fun(config: TossConfig|nil): TossTransport|nil, string|nil
 ---@field run fun(direction: TossDirection, config: TossConfig|nil): boolean, string|nil
 
----@type TossRunner
 local M = {}
 
 ---@param config TossConfig|nil

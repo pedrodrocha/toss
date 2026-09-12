@@ -6,7 +6,6 @@
 ---@class TossHerdrTransport : TossTransport
 ---@field neighbor fun(direction: TossDirection): string|nil, string|nil
 
----@type TossHerdrTransport
 local M = {}
 
 ---@type table<TossDirection, boolean>
@@ -20,7 +19,8 @@ local valid_directions = {
 ---@param value string
 ---@return string
 local function trim(value)
-	return value:gsub("^%s+", ""):gsub("%s+$", "")
+	local trimmed = value:gsub("^%s+", ""):gsub("%s+$", "")
+	return trimmed
 end
 
 ---@param result TossCommandResult
@@ -156,9 +156,8 @@ end
 ---@param direction TossDirection
 ---@return string|nil, string|nil
 function M.neighbor(direction)
-	local direction_error
-	direction, direction_error = validate_direction(direction)
-	if not direction then
+	local validated_direction, direction_error = validate_direction(direction)
+	if not validated_direction then
 		return nil, direction_error
 	end
 
@@ -167,12 +166,12 @@ function M.neighbor(direction)
 		return nil, environment_error
 	end
 
-	local result, command_error = run_neighbor(source_pane_id, direction)
+	local result, command_error = run_neighbor(source_pane_id, validated_direction)
 	if not result then
 		return nil, command_error
 	end
 
-	return decode_neighbor(result.stdout, direction)
+	return decode_neighbor(result.stdout, validated_direction)
 end
 
 ---@param direction TossDirection

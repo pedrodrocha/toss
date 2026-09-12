@@ -149,7 +149,9 @@ test.describe("toss runner", function()
     test.equal(resolved, nil)
     test.equal(err, "transport is not configured")
 
-    resolved, err = runner.resolve_transport({ transport = {} })
+    ---@type any
+    local invalid_transport = {}
+    resolved, err = runner.resolve_transport({ transport = invalid_transport })
     test.equal(resolved, nil)
     test.equal(err, "transport must provide send(direction, text)")
   end)

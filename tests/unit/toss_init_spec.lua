@@ -305,7 +305,9 @@ test.describe("toss directions", function()
 
   test.it("fails gracefully when the configured transport is invalid", function()
     toss.config = {}
-    toss.setup({ transport = {} })
+    ---@type any
+    local invalid_transport = {}
+    toss.setup({ transport = invalid_transport })
 
     local notifications = with_notifications(function()
       test.equal(toss.left(), false)

@@ -1,7 +1,6 @@
 ---@class TossFormatter
 ---@field format fun(ctx: TossContext|nil): string|nil, string|nil
 
----@type TossFormatter
 local M = {}
 
 ---@param message string

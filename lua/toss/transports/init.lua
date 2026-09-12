@@ -15,7 +15,6 @@ local priorities = {
 ---@field priorities string[]
 ---@field resolve fun(name: string): TossTransport|nil, string|nil
 
----@type TossTransports
 local M = {
   registry = registry,
   priorities = priorities,

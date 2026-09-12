@@ -16,6 +16,7 @@ local runner = require("toss.runner")
 ---@class TossConfig
 ---@field mappings boolean|TossMappings|nil
 ---@field transport string|TossTransport|nil
+---@field [string] any
 
 ---@class Toss
 ---@field config TossConfig
@@ -29,8 +30,8 @@ local runner = require("toss.runner")
 ---@field mappings boolean|TossMappings|nil
 ---@field transport string|TossTransport|nil
 
----@type Toss
 local M = {
+  ---@type TossConfig
   config = {},
 }
 

@@ -6,7 +6,6 @@
 ---@class TossContextModule
 ---@field capture fun(): TossContext|nil, string|nil
 
----@type TossContextModule
 local M = {}
 local project_root = require("toss.context.root")
 

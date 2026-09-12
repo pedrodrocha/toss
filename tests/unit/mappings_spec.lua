@@ -105,7 +105,9 @@ test.describe("toss mappings", function()
   end)
 
   test.it("returns configuration and API errors without notifying", function()
-    local ok, err = mappings.setup("enabled", callbacks)
+    ---@type any
+    local invalid_configuration = "enabled"
+    local ok, err = mappings.setup(invalid_configuration, callbacks)
     test.equal(ok, false)
     test.equal(err, "mappings must be true or a table")
 
