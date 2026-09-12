@@ -17,3 +17,7 @@ LUA_BIN=luajit NVIM_BIN=/path/to/nvim ./tests/run.sh
 ```
 
 The tests do not require Herdr, Ghostty, network access, or an AI coding agent.
+
+## Development
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for the working-tree workflow, Neovim commands, Herdr checks, and automated tests.
