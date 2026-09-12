@@ -49,6 +49,7 @@ run_integration_tests() {
     if ! "$nvim_bin" --headless -u NONE -i NONE -n -l "$spec"; then
       status=1
     fi
+    printf '\n'
   done < <(find tests/integration -maxdepth 1 -type f -name '*_spec.lua' -print | sort)
 
   if [[ "$found" -eq 0 ]]; then
