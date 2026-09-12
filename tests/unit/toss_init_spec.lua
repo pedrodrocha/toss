@@ -191,11 +191,7 @@ test.describe("toss setup", function()
       test.equal(calls[index].modes[2], "x")
       test.equal(calls[index].options.silent, true)
       test.equal(calls[index].options.desc, mapping.desc)
-      if mapping.direction ~= nil then
-        test.equal(calls[index].callback, toss[mapping.direction])
-      else
-        test.truthy(type(calls[index].callback) == "function")
-      end
+      test.truthy(type(calls[index].callback) == "function")
     end
   end)
 

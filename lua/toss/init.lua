@@ -11,7 +11,10 @@ local which_key = require("toss.which_key")
 ---@field down string|false|nil
 ---@field up string|false|nil
 ---@field right string|false|nil
----@field yank boolean|table|nil
+---@field yank_left string|false|nil
+---@field yank_down string|false|nil
+---@field yank_up string|false|nil
+---@field yank_right string|false|nil
 
 ---@class TossTransport
 ---@field send fun(direction: TossDirection, text: string): TossResult<nil>
@@ -26,10 +29,10 @@ local which_key = require("toss.which_key")
 ---@class Toss
 ---@field config TossConfig
 ---@field setup fun(opts: TossSetupOptions|nil): Toss
----@field left fun(): boolean
----@field down fun(): boolean
----@field up fun(): boolean
----@field right fun(): boolean
+---@field left fun(source: TossContextSource|nil): boolean
+---@field down fun(source: TossContextSource|nil): boolean
+---@field up fun(source: TossContextSource|nil): boolean
+---@field right fun(source: TossContextSource|nil): boolean
 
 ---@class TossSetupOptions
 ---@field mappings boolean|TossMappings|nil
@@ -60,29 +63,13 @@ end
 ---@param source TossContextSource|nil
 ---@return boolean
 local function run(direction, source)
+  source = source or "file"
   local run_result = runner.run(direction, source, M.config)
   if run_result.kind == "err" then
     notify(run_result.error)
   end
 
   return run_result.kind == "ok"
-end
-
-local function yank_callbacks()
-  return {
-    left = function()
-      return run("left", "register")
-    end,
-    down = function()
-      return run("down", "register")
-    end,
-    up = function()
-      return run("up", "register")
-    end,
-    right = function()
-      return run("right", "register")
-    end,
-  }
 end
 
 ---@param opts TossSetupOptions|nil
@@ -106,7 +93,7 @@ function M.setup(opts)
     notify(register_result.error)
   end
 
-  local mappings_result = mappings.setup(M.config.mappings, M, yank_callbacks())
+  local mappings_result = mappings.setup(M.config.mappings, run)
   if mappings_result.kind == "err" then
     notify(mappings_result.error)
   end
@@ -119,24 +106,28 @@ function M.setup(opts)
   return M
 end
 
+---@param source TossContextSource|nil
 ---@return boolean
-function M.left()
-  return run("left", nil)
+function M.left(source)
+  return run("left", source)
 end
 
+---@param source TossContextSource|nil
 ---@return boolean
-function M.down()
-  return run("down", nil)
+function M.down(source)
+  return run("down", source)
 end
 
+---@param source TossContextSource|nil
 ---@return boolean
-function M.up()
-  return run("up", nil)
+function M.up(source)
+  return run("up", source)
 end
 
+---@param source TossContextSource|nil
 ---@return boolean
-function M.right()
-  return run("right", nil)
+function M.right(source)
+  return run("right", source)
 end
 
 return M
