@@ -1,4 +1,5 @@
 local M = {}
+local project_root = require("toss.context.project_root")
 
 local function invalid(message)
   return nil, message
@@ -29,7 +30,11 @@ function M.capture()
     return nil, err
   end
 
-  local root = vim.fs.root(0, ".git") or vim.fn.getcwd()
+  local root = project_root.resolve(0)
+  if not root then
+    return invalid("could not determine project root")
+  end
+
   local relative_path = vim.fs.relpath(root, absolute_path)
   if not relative_path or relative_path == "" then
     return invalid("current file is outside the project root")
