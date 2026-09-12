@@ -110,6 +110,17 @@ test.describe("toss mappings", function()
     test.equal(vim.fn.maparg("<leader>tk", "n"), "")
     test.equal(vim.fn.maparg("<leader>tl", "n"), "")
   end)
+
+  test.it("creates mappings in Normal and Visual mode when enabled", function()
+    toss.config = {}
+    toss.setup({ mappings = true })
+
+    local keys = { "<leader>th", "<leader>tj", "<leader>tk", "<leader>tl" }
+    for _, key in ipairs(keys) do
+      test.truthy(vim.fn.maparg(key, "n") ~= "")
+      test.truthy(vim.fn.maparg(key, "x") ~= "")
+    end
+  end)
 end)
 
 vim.fn.delete(fixture_path)
