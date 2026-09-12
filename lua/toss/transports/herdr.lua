@@ -1,7 +1,4 @@
----@class TossCommandResult
----@field code integer|nil
----@field stdout string|nil
----@field stderr string|nil
+---@alias TossCommandResult { code: integer|nil, stdout: string|nil, stderr: string|nil }
 
 ---@class TossHerdrTransport : TossTransport
 ---@field neighbor fun(direction: TossDirection): string|nil, string|nil
