@@ -1,5 +1,6 @@
 local mappings = require("toss.mappings")
 local runner = require("toss.runner")
+local which_key = require("toss.which_key")
 
 ---@alias TossDirection "left"|"down"|"up"|"right"
 
@@ -15,6 +16,7 @@ local runner = require("toss.runner")
 
 ---@class TossConfig
 ---@field mappings boolean|TossMappings|nil
+---@field which_key boolean|nil
 ---@field transport string|TossTransport|nil
 ---@field [string] any
 
@@ -28,6 +30,7 @@ local runner = require("toss.runner")
 
 ---@class TossSetupOptions
 ---@field mappings boolean|TossMappings|nil
+---@field which_key boolean|nil
 ---@field transport string|TossTransport|nil
 
 local M = {
@@ -61,6 +64,11 @@ function M.setup(opts)
   local mappings_ok, mappings_error = mappings.setup(M.config.mappings, M)
   if not mappings_ok then
     notify(mappings_error)
+  end
+
+  local which_key_ok, which_key_error = which_key.setup(M.config.which_key)
+  if not which_key_ok then
+    notify(which_key_error)
   end
 
   return M
