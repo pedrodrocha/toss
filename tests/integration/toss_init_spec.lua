@@ -9,6 +9,24 @@ local fixture_path = vim.fn.getcwd() .. "/.toss-init-fixture"
 vim.fn.writefile({ "first line", "second line" }, fixture_path)
 vim.cmd("edit " .. vim.fn.fnameescape(fixture_path))
 
+local function with_herdr_environment(callback)
+  local previous_env = {
+    HERDR_ENV = vim.env.HERDR_ENV,
+    HERDR_PANE_ID = vim.env.HERDR_PANE_ID,
+  }
+
+  vim.env.HERDR_ENV = "1"
+  vim.env.HERDR_PANE_ID = "source-pane"
+
+  local ok, err = xpcall(callback, debug.traceback)
+  vim.env.HERDR_ENV = previous_env.HERDR_ENV
+  vim.env.HERDR_PANE_ID = previous_env.HERDR_PANE_ID
+
+  if not ok then
+    error(err, 0)
+  end
+end
+
 test.describe("toss directions", function()
   test.it("sends the normal-mode file payload to each direction", function()
     local calls = {}
@@ -45,8 +63,8 @@ end)
 test.describe("toss transport configuration", function()
   test.it("selects Herdr by name through the public API", function()
     local calls = {}
-    local previous_send = transports.herdr.send
-    transports.herdr.send = function(direction, text)
+    local previous_send = transports.registry.herdr.send
+    transports.registry.herdr.send = function(direction, text)
       calls[#calls + 1] = { direction = direction, text = text }
       return true
     end
@@ -55,9 +73,30 @@ test.describe("toss transport configuration", function()
     toss.setup({ transport = "herdr" })
     local result = toss.right()
 
-    transports.herdr.send = previous_send
+    transports.registry.herdr.send = previous_send
 
     test.equal(result, true)
+    test.equal(#calls, 1)
+    test.equal(calls[1].direction, "right")
+    test.equal(calls[1].text, "@.toss-init-fixture")
+  end)
+
+  test.it("auto-detects Herdr through the public API", function()
+    local calls = {}
+    local previous_send = transports.registry.herdr.send
+    transports.registry.herdr.send = function(direction, text)
+      calls[#calls + 1] = { direction = direction, text = text }
+      return true
+    end
+
+    toss.config = {}
+    toss.setup({ transport = "auto" })
+    with_herdr_environment(function()
+      test.equal(toss.right(), true)
+    end)
+
+    transports.registry.herdr.send = previous_send
+
     test.equal(#calls, 1)
     test.equal(calls[1].direction, "right")
     test.equal(calls[1].text, "@.toss-init-fixture")

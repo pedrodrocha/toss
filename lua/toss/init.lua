@@ -30,15 +30,17 @@ function M.setup(opts)
   return M
 end
 
-local function configured_transport()
+local function resolve_transport()
   local configured = M.config.transport
 
   if type(configured) == "string" then
     local transport_name = configured
-    configured = transports[transport_name]
-    if not configured then
-      return nil, "unknown transport: " .. transport_name
+    local transport, transport_error = transports.resolve(transport_name)
+    if not transport then
+      return nil, transport_error
     end
+
+    configured = transport
   end
 
   if type(configured) ~= "table" then
@@ -53,7 +55,7 @@ local function configured_transport()
 end
 
 local function run(direction)
-  local transport, transport_error = configured_transport()
+  local transport, transport_error = resolve_transport()
   if not transport then
     notify(transport_error)
     return false
