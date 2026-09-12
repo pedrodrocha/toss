@@ -1,4 +1,5 @@
 local M = {}
+local project_root = require("toss.context.root")
 
 local function invalid(message)
   return nil, message
@@ -16,6 +17,15 @@ local function validate_file_path(absolute_path)
   end
 end
 
+local function resolve_path(root, absolute_path)
+  local relative_path = root and vim.fs.relpath(root, absolute_path)
+  if relative_path and relative_path ~= "" then
+    return relative_path
+  end
+
+  return absolute_path
+end
+
 function M.capture()
   local _, err = assert_buffer_is_file()
   if err then
@@ -29,14 +39,10 @@ function M.capture()
     return nil, err
   end
 
-  local root = vim.fs.root(0, ".git") or vim.fn.getcwd()
-  local relative_path = vim.fs.relpath(root, absolute_path)
-  if not relative_path or relative_path == "" then
-    return invalid("current file is outside the project root")
-  end
+  local root = project_root.resolve(0)
 
   return {
-    path = relative_path,
+    path = resolve_path(root, absolute_path),
     start_line = nil,
     end_line = nil,
   }
