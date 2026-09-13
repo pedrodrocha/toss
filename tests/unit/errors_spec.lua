@@ -24,7 +24,7 @@ test.describe("toss errors", function()
     local err = errors.invalid_context_mode("other")
 
     test.equal(err.code, errors.codes.context_mode)
-    test.equal(errors.message(err), "context mode must be \"file\" or \"yank\": other")
+    test.equal(errors.message(err), 'context mode must be "file" or "yank": other')
   end)
 
   test.it("normalizes unsupported levels to errors", function()

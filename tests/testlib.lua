@@ -23,15 +23,7 @@ end
 
 function M.equal(actual, expected, message)
   if actual ~= expected then
-    error(
-      message
-        or string.format(
-          "expected %s, got %s",
-          value_to_string(expected),
-          value_to_string(actual)
-        ),
-      2
-    )
+    error(message or string.format("expected %s, got %s", value_to_string(expected), value_to_string(actual)), 2)
   end
 end
 
@@ -43,15 +35,7 @@ end
 
 function M.contains(value, fragment, message)
   if type(value) ~= "string" or type(fragment) ~= "string" or string.find(value, fragment, 1, true) == nil then
-    error(
-      message
-        or string.format(
-          "expected %s to contain %s",
-          value_to_string(value),
-          value_to_string(fragment)
-        ),
-      2
-    )
+    error(message or string.format("expected %s to contain %s", value_to_string(value), value_to_string(fragment)), 2)
   end
 end
 

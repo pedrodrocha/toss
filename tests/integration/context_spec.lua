@@ -65,10 +65,12 @@ end
 
 test.describe("context capture", function()
   test.it("rejects an unknown context mode", function()
-    local capture_result = context.capture("other")
+    ---@type any
+    local invalid_mode = "other"
+    local capture_result = context.capture(invalid_mode)
 
     test.equal(capture_result.kind, "err")
-    test.equal(errors.message(capture_result.error), "context mode must be \"file\" or \"yank\": other")
+    test.equal(errors.message(capture_result.error), 'context mode must be "file" or "yank": other')
   end)
 
   test.it("captures a normal file relative to the project root", function()

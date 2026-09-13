@@ -87,7 +87,7 @@ test.describe("tracked unnamed register context", function()
     vim.cmd("normal! 2Gyy")
     test.equal(toss_yank_text(), "@.toss-register-fixture#L2-L2")
 
-    vim.cmd("normal! gg\"_yy")
+    vim.cmd('normal! gg"_yy')
     test.equal(toss_yank_text(), "@.toss-register-fixture#L2-L2")
   end)
 

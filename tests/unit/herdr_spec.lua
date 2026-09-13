@@ -30,18 +30,20 @@ local function fake_herdr(options)
   options = options or {}
 
   local calls = {}
-  local neighbor_response = options.neighbor_response or {
-    result = {
-      neighbor = {
-        neighbor_pane_id = "destination-pane",
+  local neighbor_response = options.neighbor_response
+    or {
+      result = {
+        neighbor = {
+          neighbor_pane_id = "destination-pane",
+        },
       },
-    },
-  }
-  local neighbor_result = options.neighbor_result or {
-    code = 0,
-    stdout = "neighbor response",
-    stderr = "",
-  }
+    }
+  local neighbor_result = options.neighbor_result
+    or {
+      code = 0,
+      stdout = "neighbor response",
+      stderr = "",
+    }
   local send_result = options.send_result or {
     code = 0,
     stdout = "",
