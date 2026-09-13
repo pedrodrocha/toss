@@ -1,6 +1,7 @@
 # toss.nvim
 
 [![Latest release](https://img.shields.io/github/v/release/pedrodrocha/toss?sort=semver)](https://github.com/pedrodrocha/toss/releases)
+[![CI](https://github.com/pedrodrocha/toss/actions/workflows/ci.yml/badge.svg)](https://github.com/pedrodrocha/toss/actions/workflows/ci.yml)
 [![Neovim 0.10+](https://img.shields.io/badge/Neovim-0.10%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io/)
 
 `toss.nvim` sends file and selection references from Neovim to an adjacent
