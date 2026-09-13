@@ -3,6 +3,7 @@ vim.opt.rtp:prepend(vim.fn.getcwd())
 
 local test = require("tests.testlib")
 local result = require("toss.result")
+local observer = require("toss.context.yank.observer")
 local toss = require("toss")
 
 local fixture_path = vim.fn.getcwd() .. "/.toss-register-fixture"
@@ -135,6 +136,14 @@ test.describe("tracked unnamed register context", function()
     vim.cmd("normal! 2Gyy")
     vim.fn.setreg('"', "literal\ntext", "v")
 
+    local current_result = observer.current()
+    test.equal(current_result:is_ok(), true)
+    local current = assert(current_result.value)
+    test.equal(current.text, "literal\ntext")
+    test.equal(current.register_type, "v")
+    test.equal(current.path, nil)
+    test.equal(current.start_line, nil)
+    test.equal(current.end_line, nil)
     test.equal(toss_yank_text(), "literal\ntext")
   end)
 end)
