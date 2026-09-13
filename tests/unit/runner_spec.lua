@@ -5,6 +5,7 @@ local errors = require("toss.errors")
 local result = require("toss.result")
 local context = require("toss.context")
 local formatter = require("toss.formatter")
+local local_transport = require("toss.transports.local")
 local runner = require("toss.runner")
 
 local function with_stubs(stubs, callback)
@@ -40,6 +41,7 @@ test.describe("toss runner", function()
   test.it("passes the requested context mode through capture", function()
     local captured_mode
 
+    local_transport.reset()
     with_stubs({
       capture = function(mode)
         captured_mode = mode
@@ -50,15 +52,7 @@ test.describe("toss runner", function()
       end,
     }, function()
       local run_result = runner.run("right", "yank", {
-        transport = {
-          send = function()
-            return result.ok()
-          end,
-          focus = function()
-            return result.ok()
-          end,
-          available = always_available,
-        },
+        transport = local_transport,
       })
 
       test.equal(run_result.kind, "ok")
@@ -70,17 +64,8 @@ test.describe("toss runner", function()
   test.it("runs capture, formatting, and transport in order", function()
     local calls = {}
     local context_value = { path = "src/file.lua" }
-    local transport = {
-      send = function(direction, text)
-        calls[#calls + 1] = { step = "send", direction = direction, text = text }
-        return result.ok()
-      end,
-      focus = function(direction)
-        calls[#calls + 1] = { step = "focus", direction = direction }
-        return result.ok()
-      end,
-      available = always_available,
-    }
+    local transport = local_transport
+    transport.reset()
 
     with_stubs({
       capture = function()
@@ -100,28 +85,19 @@ test.describe("toss runner", function()
     test.equal(calls[1].step, "capture")
     test.equal(calls[2].step, "format")
     test.equal(calls[2].context, context_value)
-    test.equal(calls[3].step, "send")
-    test.equal(calls[3].direction, "right")
-    test.equal(calls[3].text, "@src/file.lua")
-    test.equal(calls[4].step, "focus")
-    test.equal(calls[4].direction, "right")
+    local transport_calls = transport.calls()
+    test.equal(#transport_calls, 2)
+    test.equal(transport_calls[1].operation, "send")
+    test.equal(transport_calls[1].direction, "right")
+    test.equal(transport_calls[1].text, "@src/file.lua")
+    test.equal(transport_calls[2].operation, "focus")
+    test.equal(transport_calls[2].direction, "right")
   end)
 
   test.it("returns capture failures without continuing the pipeline", function()
     local format_calls = 0
-    local send_calls = 0
-    local focus_calls = 0
-    local transport = {
-      send = function()
-        send_calls = send_calls + 1
-        return result.ok()
-      end,
-      focus = function()
-        focus_calls = focus_calls + 1
-        return result.ok()
-      end,
-      available = always_available,
-    }
+    local transport = local_transport
+    transport.reset()
 
     with_stubs({
       capture = function()
@@ -138,8 +114,7 @@ test.describe("toss runner", function()
     end)
 
     test.equal(format_calls, 0)
-    test.equal(send_calls, 0)
-    test.equal(focus_calls, 0)
+    test.equal(#transport.calls(), 0)
   end)
 
   test.it("returns formatter and transport failures", function()
