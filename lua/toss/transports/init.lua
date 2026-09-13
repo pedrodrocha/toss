@@ -1,10 +1,12 @@
 local errors = require("toss.errors")
 local herdr = require("toss.transports.herdr")
+local local_transport = require("toss.transports.local")
 local result = require("toss.result")
 
 ---@type table<string, TossTransport>
 local registry = {
   herdr = herdr,
+  ["local"] = local_transport,
 }
 
 ---@type string[]
@@ -36,13 +38,7 @@ end
 ---@param name string
 ---@return TossTransport|nil
 local function registered_transport(name)
-  for _, transport_name in ipairs(M.priorities) do
-    if transport_name == name then
-      return M.registry[name]
-    end
-  end
-
-  return nil
+  return M.registry[name]
 end
 
 ---@param name string

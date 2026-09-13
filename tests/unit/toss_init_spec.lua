@@ -6,6 +6,7 @@ local result = require("toss.result")
 local toss = require("toss")
 local context = require("toss.context")
 local transports = require("toss.transports")
+local local_transport = require("toss.transports.local")
 local herdr = transports.registry.herdr
 
 -- Unit tests provide only the Neovim APIs used by toss.setup().
@@ -262,6 +263,26 @@ test.describe("toss transport configuration", function()
     test.equal(calls[1].text, "@src/domain/user.lua")
   end)
 
+  test.it("loads the local transport when configured by name", function()
+    local transport = local_transport
+    transport.reset()
+    toss.config = {}
+    toss.setup({ transport = "local" })
+
+    with_fake_context(function()
+      test.equal(toss.right(), true)
+    end)
+
+    local calls = transport.calls()
+    test.equal(#calls, 2)
+    test.equal(calls[1].operation, "send")
+    test.equal(calls[1].direction, "right")
+    test.equal(calls[1].text, "@src/domain/user.lua")
+    test.equal(calls[2].operation, "focus")
+    test.equal(calls[2].direction, "right")
+    transport.reset()
+  end)
+
   test.it("fails gracefully for an unknown transport name", function()
     toss.config = {}
     toss.setup({ transport = "tmux" })
@@ -352,24 +373,11 @@ test.describe("toss automatic transport selection", function()
 end)
 
 test.describe("toss directions", function()
-  test.it("sends the formatted context and each direction to the transport", function()
-    local calls = {}
+  test.it("sends the formatted context and each direction to the local transport", function()
+    local transport = local_transport
+    transport.reset()
     toss.config = {}
-    toss.setup({
-      transport = {
-        send = function(direction, text)
-          calls[#calls + 1] = { direction = direction, text = text }
-          return result.ok()
-        end,
-        focus = function(direction)
-          calls[#calls + 1] = { direction = direction, focused = true }
-          return result.ok()
-        end,
-        available = function()
-          return true
-        end,
-      },
-    })
+    toss.setup({ transport = transport })
 
     with_fake_context(function()
       test.equal(toss.left(), true)
@@ -378,32 +386,23 @@ test.describe("toss directions", function()
       test.equal(toss.right(), true)
     end)
 
+    local calls = transport.calls()
     local expected_directions = { "left", "down", "up", "right" }
     test.equal(#calls, #expected_directions * 2)
     for index, direction in ipairs(expected_directions) do
       local send_call = calls[(index * 2) - 1]
       local focus_call = calls[index * 2]
+      test.equal(send_call.operation, "send")
       test.equal(send_call.direction, direction)
       test.equal(send_call.text, "@src/domain/user.lua")
+      test.equal(focus_call.operation, "focus")
       test.equal(focus_call.direction, direction)
-      test.equal(focus_call.focused, true)
     end
   end)
 
   test.it("passes an explicit yank mode through the public API", function()
-    toss.config = {
-      transport = {
-        send = function()
-          return result.ok()
-        end,
-        focus = function()
-          return result.ok()
-        end,
-        available = function()
-          return true
-        end,
-      },
-    }
+    local_transport.reset()
+    toss.config = { transport = local_transport }
 
     local captured_mode = with_fake_context(function()
       test.equal(toss.left("yank"), true)

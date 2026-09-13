@@ -4,6 +4,7 @@ vim.opt.rtp:prepend(vim.fn.getcwd())
 local test = require("tests.testlib")
 local toss_result = require("toss.result")
 local toss = require("toss")
+local local_transport = require("toss.transports.local")
 local transports = require("toss.transports")
 
 local fixture_path = vim.fn.getcwd() .. "/.toss-init-fixture"
@@ -43,22 +44,10 @@ end
 
 test.describe("toss directions", function()
   test.it("sends the normal-mode file payload to each direction", function()
-    local calls = {}
+    local transport = local_transport
+    transport.reset()
     toss.config = {}
-    toss.setup({
-      transport = {
-        send = function(direction, text)
-          calls[#calls + 1] = { direction = direction, text = text }
-          return toss_result.ok()
-        end,
-        focus = function()
-          return toss_result.ok()
-        end,
-        available = function()
-          return true
-        end,
-      },
-    })
+    toss.setup({ transport = transport })
 
     local results = {
       toss.left(),
@@ -71,11 +60,17 @@ test.describe("toss directions", function()
       test.equal(outcome, true)
     end
 
+    local calls = transport.calls()
     local expected_directions = { "left", "down", "up", "right" }
-    test.equal(#calls, #expected_directions)
+    test.equal(#calls, #expected_directions * 2)
     for index, direction in ipairs(expected_directions) do
-      test.equal(calls[index].direction, direction)
-      test.equal(calls[index].text, "@.toss-init-fixture")
+      local send_call = calls[(index * 2) - 1]
+      local focus_call = calls[index * 2]
+      test.equal(send_call.operation, "send")
+      test.equal(send_call.direction, direction)
+      test.equal(send_call.text, "@.toss-init-fixture")
+      test.equal(focus_call.operation, "focus")
+      test.equal(focus_call.direction, direction)
     end
   end)
 end)

@@ -37,6 +37,16 @@ Inside Herdr, open a project file and run:
 :lua require("toss").right()
 ```
 
+For a dry run without Herdr, select the local transport instead:
+
+```vim
+:lua require("toss").setup({ transport = "local" })
+:lua require("toss").right()
+```
+
+The local transport reports the direction and exact payload as an info
+notification. It performs no pane, process, key, or submission operations.
+
 If which-key is installed, the `<leader>t` group is labeled `󰧑 toss`.
 
 After editing Lua files, run `:luafile dev/init.lua` again to reload the development setup.
