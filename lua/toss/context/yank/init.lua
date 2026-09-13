@@ -2,14 +2,14 @@
 ---@field setup fun(): TossResult<nil>
 ---@field capture fun(): TossResult<TossContext>
 
-local register_context = require("toss.context.yank.register")
+local observer = require("toss.context.yank.observer")
 local result = require("toss.result")
 
 local M = {}
 
 ---@return TossResult<TossContext>
 function M.capture()
-  local register_result = register_context.current()
+  local register_result = observer.current()
   if register_result:is_err() then
     return register_result
   end
@@ -28,7 +28,7 @@ end
 
 ---@return TossResult<nil>
 function M.setup()
-  return register_context.setup()
+  return observer.setup()
 end
 
 return M
