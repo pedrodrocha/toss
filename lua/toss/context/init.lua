@@ -1,9 +1,11 @@
 ---@class TossFileContext
+---@field kind "file"
 ---@field path string
 ---@field start_line integer|nil
 ---@field end_line integer|nil
 
 ---@class TossTextContext
+---@field kind "text"
 ---@field text string
 
 ---@alias TossContext TossFileContext|TossTextContext
