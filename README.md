@@ -1,5 +1,8 @@
 # toss.nvim
 
+[![Latest release](https://img.shields.io/github/v/release/pedrodrocha/toss?sort=semver)](https://github.com/pedrodrocha/toss/releases)
+[![Neovim 0.10+](https://img.shields.io/badge/Neovim-0.10%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io/)
+
 `toss.nvim` sends file and selection references from Neovim to an adjacent
 terminal pane, where a coding agent can use them as context.
 
@@ -29,6 +32,15 @@ Install `pedrodrocha/toss.nvim` with your plugin manager. For example, with
 `mappings = true` opts into toss's default keymaps. Leave mappings unset
 to use only the Lua API, or pass a mapping table to customize or disable
 individual entries.
+
+## Requirements
+
+- Neovim 0.10 or newer.
+- Herdr, which is currently the only production transport.
+- Neovim running inside a Herdr pane, with `herdr` on `$PATH` and Herdr's
+  `HERDR_ENV=1` and `HERDR_PANE_ID` environment variables available.
+
+See [Transport](#transport) for details and planned alternatives.
 
 ## Context and payloads
 
