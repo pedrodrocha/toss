@@ -10,6 +10,8 @@ test.describe("toss results", function()
 
     test.equal(outcome.kind, "ok")
     test.equal(outcome.value, "payload")
+    test.equal(outcome:is_ok(), true)
+    test.equal(outcome:is_err(), false)
     test.equal(result.is(outcome), true)
   end)
 
@@ -19,7 +21,14 @@ test.describe("toss results", function()
 
     test.equal(outcome.kind, "err")
     test.equal(outcome.error, error_value)
+    test.equal(outcome:is_ok(), false)
+    test.equal(outcome:is_err(), true)
     test.equal(result.is(outcome), true)
+  end)
+
+  test.it("rejects unrelated values", function()
+    test.equal(result.is({ kind = "other" }), false)
+    test.equal(result.is(nil), false)
   end)
 end)
 
