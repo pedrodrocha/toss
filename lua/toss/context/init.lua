@@ -11,31 +11,18 @@
 ---@alias TossOrigin "file_buffer"|"yank"
 
 ---@class TossContextModule
+---@field setup fun(): TossResult<nil>
 ---@field capture fun(origin: TossOrigin|nil): TossResult<TossContext>
 
 local errors = require("toss.errors")
 local file_buffer = require("toss.context.file_buffer")
-local register_context = require("toss.context.register")
 local result = require("toss.result")
+local yank = require("toss.context.yank")
 local M = {}
 
----@return TossResult<TossContext>
-local function capture_from_yank()
-  local register_result = register_context.current()
-  if register_result:is_err() then
-    return register_result
-  end
-
-  local register = register_result.value
-  if register.path ~= nil and register.start_line ~= nil and register.end_line ~= nil then
-    return result.ok({
-      path = register.path,
-      start_line = register.start_line,
-      end_line = register.end_line,
-    })
-  end
-
-  return result.ok({ text = register.text })
+---@return TossResult<nil>
+function M.setup()
+  return yank.setup()
 end
 
 ---@param origin TossOrigin|nil
@@ -46,7 +33,7 @@ function M.capture(origin)
   end
 
   if origin == "yank" then
-    return capture_from_yank()
+    return yank.capture()
   end
 
   return result.err(errors.invalid_context_origin(origin))

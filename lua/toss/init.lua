@@ -1,4 +1,4 @@
-local context_register = require("toss.context.register")
+local context = require("toss.context")
 local errors = require("toss.errors")
 local mappings = require("toss.mappings")
 local runner = require("toss.runner")
@@ -93,9 +93,9 @@ function M.setup(opts)
     M.config[key] = value
   end
 
-  local register_result = context_register.setup()
-  if register_result:is_err() then
-    notify(register_result.error)
+  local context_result = context.setup()
+  if context_result:is_err() then
+    notify(context_result.error)
   end
 
   local mappings_result = mappings.setup(M.config.mappings, run)

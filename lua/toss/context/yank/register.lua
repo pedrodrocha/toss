@@ -16,7 +16,10 @@ local result = require("toss.result")
 local M = {}
 
 local autocmd_group = "TossRegisterContext"
-local last_record
+
+local state = {
+  last_record = nil,
+}
 
 local tracked_operators = {
   y = true,
@@ -158,7 +161,7 @@ local function record(event, bufnr)
     end
   end
 
-  last_record = {
+  state.last_record = {
     text = register_result.value.text,
     register_type = register_result.value.register_type,
     path = source_path_value,
@@ -177,17 +180,17 @@ function M.current()
   end
 
   local current_register = register_result.value
-  local matches_record = last_record ~= nil
-    and current_register.text == last_record.text
-    and current_register.register_type == last_record.register_type
+  local matches_record = state.last_record ~= nil
+    and current_register.text == state.last_record.text
+    and current_register.register_type == state.last_record.register_type
 
   if matches_record then
     return result.ok({
       text = current_register.text,
       register_type = current_register.register_type,
-      path = last_record.path,
-      start_line = last_record.start_line,
-      end_line = last_record.end_line,
+      path = state.last_record.path,
+      start_line = state.last_record.start_line,
+      end_line = state.last_record.end_line,
     })
   end
 
