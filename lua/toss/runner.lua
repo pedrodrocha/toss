@@ -16,7 +16,7 @@ local function resolve_transport(config)
 
   if type(configured) == "string" then
     local resolved = transports.resolve(configured)
-    if resolved.kind == "err" then
+    if resolved:is_err() then
       return result.err(resolved.error)
     end
 
@@ -56,7 +56,7 @@ function M.run(direction, mode, config)
     return result.err(errors.invalid_result("transport resolution"))
   end
 
-  if transport_result.kind == "err" then
+  if transport_result:is_err() then
     return result.err(transport_result.error)
   end
 
@@ -70,7 +70,7 @@ function M.run(direction, mode, config)
     return result.err(errors.invalid_result("context capture"))
   end
 
-  if capture_result.kind == "err" then
+  if capture_result:is_err() then
     return result.err(capture_result.error)
   end
 
@@ -84,7 +84,7 @@ function M.run(direction, mode, config)
     return result.err(errors.invalid_result("context formatting"))
   end
 
-  if format_result.kind == "err" then
+  if format_result:is_err() then
     return result.err(format_result.error)
   end
 
@@ -98,7 +98,7 @@ function M.run(direction, mode, config)
     return result.err(errors.invalid_transport_result())
   end
 
-  if send_result.kind == "err" then
+  if send_result:is_err() then
     return result.err(send_result.error)
   end
 
@@ -111,7 +111,7 @@ function M.run(direction, mode, config)
     return result.err(errors.invalid_transport_focus_result())
   end
 
-  if focus_result.kind == "err" then
+  if focus_result:is_err() then
     return result.err(focus_result.error)
   end
 

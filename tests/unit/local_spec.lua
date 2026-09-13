@@ -36,8 +36,8 @@ test.describe("local transport", function()
     local_transport.reset()
 
     with_vim({}, function()
-      test.equal(local_transport.send("right", "@src/file.lua#L2-L4").kind, "ok")
-      test.equal(local_transport.focus("right").kind, "ok")
+      test.equal(local_transport.send("right", "@src/file.lua#L2-L4"):is_ok(), true)
+      test.equal(local_transport.focus("right"):is_ok(), true)
     end)
 
     local calls = local_transport.calls()
@@ -60,8 +60,8 @@ test.describe("local transport", function()
         notifications[#notifications + 1] = { message = message, level = level }
       end,
     }, function()
-      test.equal(local_transport.send("left", "@README.md; printf hacked").kind, "ok")
-      test.equal(local_transport.focus("left").kind, "ok")
+      test.equal(local_transport.send("left", "@README.md; printf hacked"):is_ok(), true)
+      test.equal(local_transport.focus("left"):is_ok(), true)
     end)
 
     test.equal(#notifications, 1)
@@ -88,8 +88,8 @@ test.describe("local transport", function()
         process_calls = process_calls + 1
       end,
     }, function()
-      test.equal(local_transport.send("up", "@src/file.lua").kind, "ok")
-      test.equal(local_transport.focus("up").kind, "ok")
+      test.equal(local_transport.send("up", "@src/file.lua"):is_ok(), true)
+      test.equal(local_transport.focus("up"):is_ok(), true)
     end)
 
     test.equal(messages, 1)
@@ -114,7 +114,7 @@ test.describe("local transport registration", function()
   test.it("resolves when explicitly selected", function()
     local resolved = transports.resolve("local")
 
-    test.equal(resolved.kind, "ok")
+    test.equal(resolved:is_ok(), true)
     test.equal(resolved.value, transports.registry["local"])
   end)
 
@@ -126,7 +126,7 @@ test.describe("local transport registration", function()
 
     _G.vim = previous_vim
 
-    test.equal(resolved.kind, "err")
+    test.equal(resolved:is_err(), true)
     test.equal(resolved.error.code, "no_transport_available")
   end)
 end)

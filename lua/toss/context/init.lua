@@ -73,13 +73,13 @@ end
 ---@return TossResult<TossContext>
 local function capture_from_file()
   local buffer_result = assert_buffer_is_file()
-  if buffer_result.kind == "err" then
+  if buffer_result:is_err() then
     return buffer_result
   end
 
   local absolute_path = vim.api.nvim_buf_get_name(0)
   local path_result = validate_file_path(absolute_path)
-  if path_result.kind == "err" then
+  if path_result:is_err() then
     return path_result
   end
 
@@ -101,7 +101,7 @@ end
 ---@return TossResult<TossContext>
 local function capture_from_yank()
   local register_result = register_context.current()
-  if register_result.kind == "err" then
+  if register_result:is_err() then
     return register_result
   end
 

@@ -66,11 +66,11 @@ end
 local function run(direction, mode)
   mode = mode or "file"
   local run_result = runner.run(direction, mode, M.config)
-  if run_result.kind == "err" then
+  if run_result:is_err() then
     notify(run_result.error)
   end
 
-  return run_result.kind == "ok"
+  return run_result:is_ok()
 end
 
 ---@param opts TossSetupOptions|nil
@@ -91,12 +91,12 @@ function M.setup(opts)
   end
 
   local register_result = context_register.setup()
-  if register_result.kind == "err" then
+  if register_result:is_err() then
     notify(register_result.error)
   end
 
   local mappings_result = mappings.setup(M.config.mappings, run)
-  if mappings_result.kind == "err" then
+  if mappings_result:is_err() then
     -- Mapping setup is transactional. Keep the configuration in sync with the
     -- mappings that are still active when validation or registration fails.
     M.config.mappings = previous_mappings
@@ -104,7 +104,7 @@ function M.setup(opts)
   end
 
   local which_key_result = which_key.setup(M.config.which_key)
-  if which_key_result.kind == "err" then
+  if which_key_result:is_err() then
     notify(which_key_result.error)
   end
 

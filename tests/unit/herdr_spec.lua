@@ -17,12 +17,12 @@ local function with_vim(fake_vim, callback)
 end
 
 local function assert_success(outcome)
-  test.equal(outcome.kind, "ok")
+  test.equal(outcome:is_ok(), true)
   return assert(outcome.value)
 end
 
 local function assert_failure(outcome)
-  test.equal(outcome.kind, "err")
+  test.equal(outcome:is_err(), true)
   return assert(outcome.error)
 end
 
@@ -95,7 +95,7 @@ test.describe("Herdr transport focus", function()
       with_vim(fake_vim, function()
         local focus_result = herdr.focus(direction)
 
-        test.equal(focus_result.kind, "ok")
+        test.equal(focus_result:is_ok(), true)
       end)
 
       test.equal(#calls, 1)
@@ -346,7 +346,7 @@ test.describe("Herdr transport send-text", function()
     with_vim(fake_vim, function()
       local send_result = herdr.send("right", text)
 
-      test.equal(send_result.kind, "ok")
+      test.equal(send_result:is_ok(), true)
     end)
 
     test.equal(#calls, 2)

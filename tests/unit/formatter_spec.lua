@@ -8,7 +8,7 @@ test.describe("formatter", function()
   test.it("formats a file-only context", function()
     local formatted = formatter.format({ path = "src/domain/user.lua" })
 
-    test.equal(formatted.kind, "ok")
+    test.equal(formatted:is_ok(), true)
     test.equal(formatted.value, "@src/domain/user.lua")
   end)
 
@@ -19,7 +19,7 @@ test.describe("formatter", function()
       end_line = 67,
     })
 
-    test.equal(formatted.kind, "ok")
+    test.equal(formatted:is_ok(), true)
     test.equal(formatted.value, "@src/domain/user.lua#L42-L67")
   end)
 
@@ -27,14 +27,14 @@ test.describe("formatter", function()
     local text = "first line\nsecond line\n"
     local formatted = formatter.format({ text = text })
 
-    test.equal(formatted.kind, "ok")
+    test.equal(formatted:is_ok(), true)
     test.equal(formatted.value, text)
   end)
 
   test.it("rejects empty literal register text", function()
     local formatted = formatter.format({ text = "" })
 
-    test.equal(formatted.kind, "err")
+    test.equal(formatted:is_err(), true)
     test.equal(errors.message(formatted.error), "context text must be a non-empty string")
   end)
 
@@ -50,7 +50,7 @@ test.describe("formatter", function()
     for _, value in ipairs(invalid_contexts) do
       local formatted = formatter.format(value)
 
-      test.equal(formatted.kind, "err")
+      test.equal(formatted:is_err(), true)
       test.truthy(errors.is(formatted.error))
       test.truthy(type(errors.message(formatted.error)) == "string")
     end

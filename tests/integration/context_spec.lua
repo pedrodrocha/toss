@@ -35,14 +35,14 @@ end
 local function capture_success()
   local capture_result = context.capture()
 
-  test.equal(capture_result.kind, "ok")
+  test.equal(capture_result:is_ok(), true)
   return assert(capture_result.value)
 end
 
 local function assert_failure(message)
   local capture_result = context.capture()
 
-  test.equal(capture_result.kind, "err")
+  test.equal(capture_result:is_err(), true)
   local err = capture_result.error
   test.truthy(errors.is(err))
   if type(message) == "string" then
@@ -69,7 +69,7 @@ test.describe("context capture", function()
     local invalid_mode = "other"
     local capture_result = context.capture(invalid_mode)
 
-    test.equal(capture_result.kind, "err")
+    test.equal(capture_result:is_err(), true)
     test.equal(errors.message(capture_result.error), 'context mode must be "file" or "yank": other')
   end)
 
@@ -87,7 +87,7 @@ test.describe("context capture", function()
   test.it("captures the inclusive characterwise visual line range", function()
     local capture_result = capture_selection("ggvjj")
 
-    test.equal(capture_result.kind, "ok")
+    test.equal(capture_result:is_ok(), true)
     local value = assert(capture_result.value)
     test.equal(value.path, ".toss-visual-fixture")
     test.equal(value.start_line, 1)
@@ -97,7 +97,7 @@ test.describe("context capture", function()
   test.it("captures the inclusive linewise visual line range", function()
     local capture_result = capture_selection("ggVjj")
 
-    test.equal(capture_result.kind, "ok")
+    test.equal(capture_result:is_ok(), true)
     local value = assert(capture_result.value)
     test.equal(value.path, ".toss-visual-fixture")
     test.equal(value.start_line, 1)
@@ -107,7 +107,7 @@ test.describe("context capture", function()
   test.it("captures the inclusive blockwise visual line range", function()
     local capture_result = capture_selection("gg" .. string.char(22) .. "jj")
 
-    test.equal(capture_result.kind, "ok")
+    test.equal(capture_result:is_ok(), true)
     local value = assert(capture_result.value)
     test.equal(value.path, ".toss-visual-fixture")
     test.equal(value.start_line, 1)
@@ -117,7 +117,7 @@ test.describe("context capture", function()
   test.it("normalizes a reverse visual selection", function()
     local capture_result = capture_selection("3Gvkk")
 
-    test.equal(capture_result.kind, "ok")
+    test.equal(capture_result:is_ok(), true)
     local value = assert(capture_result.value)
     test.equal(value.path, ".toss-visual-fixture")
     test.equal(value.start_line, 1)
