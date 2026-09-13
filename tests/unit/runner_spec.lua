@@ -38,13 +38,13 @@ local function always_available()
 end
 
 test.describe("toss runner", function()
-  test.it("passes the requested context mode through capture", function()
-    local captured_mode
+  test.it("passes the requested context origin through capture", function()
+    local captured_origin
 
     local_transport.reset()
     with_stubs({
-      capture = function(mode)
-        captured_mode = mode
+      capture = function(origin)
+        captured_origin = origin
         return result.ok({ path = "src/file.lua" })
       end,
       format = function()
@@ -58,7 +58,7 @@ test.describe("toss runner", function()
       test.equal(run_result:is_ok(), true)
     end)
 
-    test.equal(captured_mode, "yank")
+    test.equal(captured_origin, "yank")
   end)
 
   test.it("runs capture, formatting, and transport in order", function()

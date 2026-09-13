@@ -17,8 +17,8 @@ local function with_vim(fake_vim, callback)
 end
 
 local run_calls = {}
-local function run(direction, mode)
-  run_calls[#run_calls + 1] = { direction = direction, mode = mode }
+local function run(direction, origin)
+  run_calls[#run_calls + 1] = { direction = direction, origin = origin }
   return true
 end
 
@@ -88,14 +88,14 @@ test.describe("toss mappings", function()
     end)
 
     local expected = {
-      { key = "<leader>th", direction = "left", mode = "file", desc = "Toss left" },
-      { key = "<leader>tj", direction = "down", mode = "file", desc = "Toss down" },
-      { key = "<leader>tk", direction = "up", mode = "file", desc = "Toss up" },
-      { key = "<leader>tl", direction = "right", mode = "file", desc = "Toss right" },
-      { key = "<leader>tyh", direction = "left", mode = "yank", desc = "Toss yank left" },
-      { key = "<leader>tyj", direction = "down", mode = "yank", desc = "Toss yank down" },
-      { key = "<leader>tyk", direction = "up", mode = "yank", desc = "Toss yank up" },
-      { key = "<leader>tyl", direction = "right", mode = "yank", desc = "Toss yank right" },
+      { key = "<leader>th", direction = "left", origin = "file_buffer", desc = "Toss left" },
+      { key = "<leader>tj", direction = "down", origin = "file_buffer", desc = "Toss down" },
+      { key = "<leader>tk", direction = "up", origin = "file_buffer", desc = "Toss up" },
+      { key = "<leader>tl", direction = "right", origin = "file_buffer", desc = "Toss right" },
+      { key = "<leader>tyh", direction = "left", origin = "yank", desc = "Toss yank left" },
+      { key = "<leader>tyj", direction = "down", origin = "yank", desc = "Toss yank down" },
+      { key = "<leader>tyk", direction = "up", origin = "yank", desc = "Toss yank up" },
+      { key = "<leader>tyl", direction = "right", origin = "yank", desc = "Toss yank right" },
     }
 
     test.equal(#calls, #expected)
@@ -107,7 +107,7 @@ test.describe("toss mappings", function()
       test.truthy(type(call.callback) == "function")
       call.callback()
       test.equal(run_calls[index].direction, expected_mapping.direction)
-      test.equal(run_calls[index].mode, expected_mapping.mode)
+      test.equal(run_calls[index].origin, expected_mapping.origin)
       test.equal(call.options.silent, true)
       test.equal(call.options.desc, expected_mapping.desc)
     end
@@ -142,7 +142,7 @@ test.describe("toss mappings", function()
     test.equal(calls[3], "<leader>tl")
   end)
 
-  test.it("uses one mapping configuration for both context modes", function()
+  test.it("uses one mapping configuration for both context origins", function()
     reset_mappings()
     local calls = {}
 
