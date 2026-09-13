@@ -180,15 +180,15 @@ test.describe("toss mappings", function()
     local active_configuration = toss.config.mappings
     local notifications = {}
     local previous_notify = vim.notify
-    vim.notify = function(message)
+    rawset(vim, "notify", function(message)
       notifications[#notifications + 1] = message
-    end
+    end)
 
     ---@type any
     local invalid_mappings = { left = 42 }
     toss.setup({ mappings = invalid_mappings })
 
-    vim.notify = previous_notify
+    rawset(vim, "notify", previous_notify)
     test.equal(toss.config.mappings, active_configuration)
     test.truthy(vim.fn.maparg("<leader>tvalid", "n") ~= "")
     test.equal(vim.fn.maparg("<leader>tnew", "n"), "")
