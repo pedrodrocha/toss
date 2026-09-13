@@ -31,7 +31,8 @@ local function resolve_transport(config)
     return result.err(errors.transport_configuration())
   end
 
-  if type(configured.send) ~= "function"
+  if
+    type(configured.send) ~= "function"
     or type(configured.focus) ~= "function"
     or type(configured.available) ~= "function"
   then

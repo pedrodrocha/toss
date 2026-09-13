@@ -279,7 +279,7 @@ test.describe("toss runner", function()
             return result.err(focus_error)
           end,
           available = always_available,
-        }
+        },
       })
 
       test.equal(errors.message(assert_failure(run_result)), "transport focus failed: focus exploded")
@@ -309,7 +309,7 @@ test.describe("toss runner", function()
             end,
             focus = focus,
             available = always_available,
-          }
+          },
         })
 
         focus_error = assert_failure(run_result)

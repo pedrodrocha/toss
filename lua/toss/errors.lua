@@ -83,9 +83,7 @@ end
 ---@param value any
 ---@return boolean
 function M.is(value)
-  return type(value) == "table"
-    and type(value.code) == "string"
-    and type(value.message) == "string"
+  return type(value) == "table" and type(value.code) == "string" and type(value.message) == "string"
 end
 
 ---@param value any
@@ -134,27 +132,14 @@ end
 M.setup_options = constructor(M.codes.setup_options, "setup options must be a table")
 M.mapping_configuration = constructor(M.codes.mapping_configuration, "mappings must be true or a table")
 M.mapping_key = function(direction)
-  return defined(
-    M.codes.mapping_configuration,
-    "mapping for " .. direction .. " must be a string or false",
-    "error"
-  )
+  return defined(M.codes.mapping_configuration, "mapping for " .. direction .. " must be a string or false", "error")
 end
 M.mapping_setup = constructor(M.codes.mapping_setup, "mapping setup failed")
 M.mapping_registration = function(direction, detail)
-  return defined(
-    M.codes.mapping_setup,
-    "could not register " .. direction .. " mapping",
-    "error",
-    detail
-  )
+  return defined(M.codes.mapping_setup, "could not register " .. direction .. " mapping", "error", detail)
 end
 M.keymap_unavailable = constructor(M.codes.mapping_setup, "keymap API is unavailable")
-M.which_key_registration = constructor(
-  M.codes.which_key_registration,
-  "which-key registration failed",
-  "warn"
-)
+M.which_key_registration = constructor(M.codes.which_key_registration, "which-key registration failed", "warn")
 M.transport_not_configured = constructor(M.codes.transport_not_configured, "transport is not configured")
 M.transport_configuration = constructor(
   M.codes.transport_configuration,
@@ -164,29 +149,15 @@ M.invalid_transport = constructor(
   M.codes.invalid_transport,
   "transport must provide send(direction, text), focus(direction), and available()"
 )
-M.invalid_transport_result = constructor(
-  M.codes.invalid_transport_result,
-  "transport must return a Result"
-)
-M.invalid_transport_focus_result = constructor(
-  M.codes.invalid_transport_focus_result,
-  "transport focus must return a Result"
-)
+M.invalid_transport_result = constructor(M.codes.invalid_transport_result, "transport must return a Result")
+M.invalid_transport_focus_result =
+  constructor(M.codes.invalid_transport_focus_result, "transport focus must return a Result")
 M.invalid_result = function(operation)
-  return defined(
-    M.codes.invalid_result,
-    operation .. " returned an invalid Result",
-    "error"
-  )
+  return defined(M.codes.invalid_result, operation .. " returned an invalid Result", "error")
 end
 M.context_capture = constructor(M.codes.context_capture, "context capture failed")
 M.invalid_context_mode = function(mode)
-  return defined(
-    M.codes.context_mode,
-    "context mode must be \"file\" or \"yank\"",
-    "error",
-    mode
-  )
+  return defined(M.codes.context_mode, 'context mode must be "file" or "yank"', "error", mode)
 end
 M.could_not_capture = constructor(M.codes.context_capture, "could not capture context")
 M.context_formatting = constructor(M.codes.formatting, "context formatting failed")
@@ -214,10 +185,7 @@ M.unknown_transport = function(name)
 end
 M.no_transport = constructor(M.codes.no_transport, "no transport is available", "warn")
 
-M.herdr_environment = constructor(
-  M.codes.herdr_environment,
-  "Herdr transport requires Neovim to run inside Herdr"
-)
+M.herdr_environment = constructor(M.codes.herdr_environment, "Herdr transport requires Neovim to run inside Herdr")
 M.herdr_pane = constructor(M.codes.herdr_pane, "Herdr transport requires HERDR_PANE_ID")
 M.herdr_direction = constructor(M.codes.herdr_direction, "invalid Herdr neighbor direction")
 M.herdr_command = function(message, detail)
@@ -239,11 +207,7 @@ M.herdr_response = function(message, detail)
   return defined(M.codes.herdr_response, message, "error", detail)
 end
 M.herdr_neighbor = function(direction)
-  return defined(
-    M.codes.herdr_neighbor,
-    "no adjacent Herdr pane found in direction " .. direction,
-    "warn"
-  )
+  return defined(M.codes.herdr_neighbor, "no adjacent Herdr pane found in direction " .. direction, "warn")
 end
 M.herdr_text = constructor(M.codes.herdr_text, "Herdr send-text requires text")
 
