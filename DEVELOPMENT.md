@@ -79,3 +79,6 @@ make check         # run test, analysis, and format checks
 ```
 
 Set `LUA_LS_BIN` or `STYLUA_BIN` to use a custom tool installation.
+
+Pull requests run the tests and LuaLS analysis in GitHub Actions. The workflow
+uses pinned Neovim and LuaLS releases and does not require Herdr.

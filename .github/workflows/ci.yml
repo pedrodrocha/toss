@@ -1,0 +1,58 @@
+name: Pull request checks
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Tests and Lua analysis
+    runs-on: ubuntu-24.04
+    env:
+      NVIM_VERSION: v0.12.5
+      NVIM_SHA256: bce0f56eda1f1b1db6eee8f4133d7a38813ea07933837dd1777411ca384c6875
+      LUA_LS_VERSION: 3.19.1
+      LUA_LS_SHA256: e9235d2d72ef55bc41cf8c99cda2ed64777682024b4bb81f5dea425060c5cbb8
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Lua
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes lua5.1
+
+      - name: Install Neovim
+        run: |
+          archive="$RUNNER_TEMP/nvim.tar.gz"
+          curl --fail --location --silent --show-error \
+            --output "$archive" \
+            "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-x86_64.tar.gz"
+          printf '%s  %s\n' "$NVIM_SHA256" "$archive" | sha256sum --check --status
+          tar --extract --gzip --file "$archive" --directory "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/nvim-linux-x86_64/bin" >> "$GITHUB_PATH"
+          echo "VIMRUNTIME=$RUNNER_TEMP/nvim-linux-x86_64/share/nvim/runtime" >> "$GITHUB_ENV"
+
+      - name: Install LuaLS
+        run: |
+          archive="$RUNNER_TEMP/lua-language-server.tar.gz"
+          install_dir="$RUNNER_TEMP/lua-language-server"
+          curl --fail --location --silent --show-error \
+            --output "$archive" \
+            "https://github.com/LuaLS/lua-language-server/releases/download/${LUA_LS_VERSION}/lua-language-server-${LUA_LS_VERSION}-linux-x64.tar.gz"
+          printf '%s  %s\n' "$LUA_LS_SHA256" "$archive" | sha256sum --check --status
+          mkdir --parents "$install_dir"
+          tar --extract --gzip --file "$archive" --directory "$install_dir"
+          echo "$install_dir/bin" >> "$GITHUB_PATH"
+
+      - name: Run tests
+        run: LUA_BIN=lua5.1 ./tests/run.sh
+
+      - name: Run LuaLS analysis
+        run: ./scripts/check-lua.sh
