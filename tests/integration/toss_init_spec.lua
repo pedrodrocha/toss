@@ -38,6 +38,12 @@ test.describe("toss directions", function()
           calls[#calls + 1] = { direction = direction, text = text }
           return toss_result.ok()
         end,
+        focus = function()
+          return toss_result.ok()
+        end,
+        available = function()
+          return true
+        end,
       },
     })
 
@@ -65,8 +71,12 @@ test.describe("toss transport configuration", function()
   test.it("selects Herdr by name through the public API", function()
     local calls = {}
     local previous_send = transports.registry.herdr.send
+    local previous_focus = transports.registry.herdr.focus
     rawset(transports.registry.herdr, "send", function(direction, text)
       calls[#calls + 1] = { direction = direction, text = text }
+      return toss_result.ok()
+    end)
+    rawset(transports.registry.herdr, "focus", function()
       return toss_result.ok()
     end)
 
@@ -75,6 +85,7 @@ test.describe("toss transport configuration", function()
     local outcome = toss.right()
 
     transports.registry.herdr.send = previous_send
+    transports.registry.herdr.focus = previous_focus
 
     test.equal(outcome, true)
     test.equal(#calls, 1)
@@ -85,8 +96,12 @@ test.describe("toss transport configuration", function()
   test.it("auto-detects Herdr through the public API", function()
     local calls = {}
     local previous_send = transports.registry.herdr.send
+    local previous_focus = transports.registry.herdr.focus
     rawset(transports.registry.herdr, "send", function(direction, text)
       calls[#calls + 1] = { direction = direction, text = text }
+      return toss_result.ok()
+    end)
+    rawset(transports.registry.herdr, "focus", function()
       return toss_result.ok()
     end)
 
@@ -97,6 +112,7 @@ test.describe("toss transport configuration", function()
     end)
 
     transports.registry.herdr.send = previous_send
+    transports.registry.herdr.focus = previous_focus
 
     test.equal(#calls, 1)
     test.equal(calls[1].direction, "right")

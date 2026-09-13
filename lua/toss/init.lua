@@ -18,7 +18,8 @@ local which_key = require("toss.which_key")
 
 ---@class TossTransport
 ---@field send fun(direction: TossDirection, text: string): TossResult<nil>
----@field available? fun(): boolean
+---@field focus fun(direction: TossDirection): TossResult<nil>
+---@field available fun(): boolean
 
 ---@class TossConfig
 ---@field mappings boolean|TossMappings|nil

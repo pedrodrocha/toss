@@ -32,6 +32,10 @@ local function assert_failure(outcome)
   return outcome.error
 end
 
+local function always_available()
+  return true
+end
+
 test.describe("toss runner", function()
   test.it("passes the requested context mode through capture", function()
     local captured_mode
@@ -50,6 +54,10 @@ test.describe("toss runner", function()
           send = function()
             return result.ok()
           end,
+          focus = function()
+            return result.ok()
+          end,
+          available = always_available,
         },
       })
 
@@ -67,6 +75,11 @@ test.describe("toss runner", function()
         calls[#calls + 1] = { step = "send", direction = direction, text = text }
         return result.ok()
       end,
+      focus = function(direction)
+        calls[#calls + 1] = { step = "focus", direction = direction }
+        return result.ok()
+      end,
+      available = always_available,
     }
 
     with_stubs({
@@ -90,16 +103,24 @@ test.describe("toss runner", function()
     test.equal(calls[3].step, "send")
     test.equal(calls[3].direction, "right")
     test.equal(calls[3].text, "@src/file.lua")
+    test.equal(calls[4].step, "focus")
+    test.equal(calls[4].direction, "right")
   end)
 
   test.it("returns capture failures without continuing the pipeline", function()
     local format_calls = 0
     local send_calls = 0
+    local focus_calls = 0
     local transport = {
       send = function()
         send_calls = send_calls + 1
         return result.ok()
       end,
+      focus = function()
+        focus_calls = focus_calls + 1
+        return result.ok()
+      end,
+      available = always_available,
     }
 
     with_stubs({
@@ -118,6 +139,7 @@ test.describe("toss runner", function()
 
     test.equal(format_calls, 0)
     test.equal(send_calls, 0)
+    test.equal(focus_calls, 0)
   end)
 
   test.it("returns formatter and transport failures", function()
@@ -139,6 +161,10 @@ test.describe("toss runner", function()
             send_calls = send_calls + 1
             return result.err(transport_error)
           end,
+          focus = function()
+            error("focus should not run")
+          end,
+          available = always_available,
         },
       })
 
@@ -160,6 +186,10 @@ test.describe("toss runner", function()
           send = function()
             return result.err(transport_error)
           end,
+          focus = function()
+            error("focus should not run")
+          end,
+          available = always_available,
         },
       })
 
@@ -186,6 +216,10 @@ test.describe("toss runner", function()
             local invalid_result = nil
             return invalid_result
           end,
+          focus = function()
+            error("focus should not run")
+          end,
+          available = always_available,
         },
       })
 
@@ -209,6 +243,10 @@ test.describe("toss runner", function()
           send = function()
             error("send exploded")
           end,
+          focus = function()
+            error("focus should not run")
+          end,
+          available = always_available,
         },
       })
 
@@ -216,6 +254,80 @@ test.describe("toss runner", function()
       test.contains(errors.message(err), "transport failed: ")
       test.contains(errors.message(err), "send exploded")
     end)
+  end)
+
+  test.it("returns focus failures after a successful send", function()
+    local calls = {}
+    local focus_error = errors.transport_focus("focus exploded")
+
+    with_stubs({
+      capture = function()
+        return result.ok({ path = "src/file.lua" })
+      end,
+      format = function()
+        return result.ok("@src/file.lua")
+      end,
+    }, function()
+      local run_result = runner.run("down", nil, {
+        transport = {
+          send = function(direction, text)
+            calls[#calls + 1] = { step = "send", direction = direction, text = text }
+            return result.ok()
+          end,
+          focus = function(direction)
+            calls[#calls + 1] = { step = "focus", direction = direction }
+            return result.err(focus_error)
+          end,
+          available = always_available,
+        }
+      })
+
+      test.equal(errors.message(assert_failure(run_result)), "transport focus failed: focus exploded")
+    end)
+
+    test.equal(#calls, 2)
+    test.equal(calls[1].step, "send")
+    test.equal(calls[2].step, "focus")
+    test.equal(calls[2].direction, "down")
+  end)
+
+  test.it("converts focus exceptions and invalid results into failures", function()
+    local function run_with_focus(focus)
+      local focus_error
+      with_stubs({
+        capture = function()
+          return result.ok({ path = "src/file.lua" })
+        end,
+        format = function()
+          return result.ok("@src/file.lua")
+        end,
+      }, function()
+        local run_result = runner.run("up", nil, {
+          transport = {
+            send = function()
+              return result.ok()
+            end,
+            focus = focus,
+            available = always_available,
+          }
+        })
+
+        focus_error = assert_failure(run_result)
+      end)
+      return focus_error
+    end
+
+    local exception = run_with_focus(function()
+      error("focus exploded")
+    end)
+    test.contains(errors.message(exception), "transport focus failed: ")
+    test.contains(errors.message(exception), "focus exploded")
+
+    local invalid_result = run_with_focus(function()
+      ---@type any
+      return nil
+    end)
+    test.equal(errors.message(invalid_result), "transport focus must return a Result")
   end)
 
   test.it("returns transport configuration failures without capturing context", function()

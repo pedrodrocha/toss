@@ -47,6 +47,11 @@ local function fake_herdr(options)
     stdout = "",
     stderr = "",
   }
+  local focus_result = options.focus_result or {
+    code = 0,
+    stdout = "",
+    stderr = "",
+  }
   local fake_vim = {
     env = {
       HERDR_ENV = "1",
@@ -60,11 +65,16 @@ local function fake_herdr(options)
     },
     system = function(argv)
       calls[#calls + 1] = argv
-      local result = argv[3] == "neighbor" and neighbor_result or send_result
+      local command_results = {
+        neighbor = neighbor_result,
+        ["send-text"] = send_result,
+        focus = focus_result,
+      }
+      local command_result = command_results[argv[3]]
 
       return {
         wait = function()
-          return result
+          return command_result
         end,
       }
     end,
@@ -72,6 +82,74 @@ local function fake_herdr(options)
 
   return fake_vim, calls
 end
+
+test.describe("Herdr transport focus", function()
+  test.it("focuses the explicit source pane in every direction", function()
+    local directions = { "left", "down", "up", "right" }
+
+    for _, direction in ipairs(directions) do
+      local fake_vim, calls = fake_herdr()
+
+      with_vim(fake_vim, function()
+        local focus_result = herdr.focus(direction)
+
+        test.equal(focus_result.kind, "ok")
+      end)
+
+      test.equal(#calls, 1)
+      local expected_argv = {
+        "herdr",
+        "pane",
+        "focus",
+        "--pane",
+        "source-pane",
+        "--direction",
+        direction,
+      }
+      for index, argument in ipairs(expected_argv) do
+        test.equal(calls[1][index], argument)
+      end
+    end
+  end)
+
+  test.it("reports focus command failures with useful details", function()
+    local fake_vim, calls = fake_herdr({
+      focus_result = {
+        code = 1,
+        stdout = "pane_not_found",
+        stderr = "source pane is invalid\\n",
+      },
+    })
+
+    with_vim(fake_vim, function()
+      local err = assert_failure(herdr.focus("right"))
+
+      test.contains(errors.message(err), "Herdr focus failed")
+      test.contains(errors.message(err), "exit code 1")
+      test.contains(errors.message(err), "source pane is invalid")
+      test.contains(errors.message(err), "pane_not_found")
+    end)
+
+    test.equal(#calls, 1)
+  end)
+
+  test.it("rejects focus without a valid Herdr environment", function()
+    local calls = 0
+
+    with_vim({
+      env = { HERDR_ENV = "0", HERDR_PANE_ID = "source-pane" },
+      system = function()
+        calls = calls + 1
+      end,
+    }, function()
+      local err = assert_failure(herdr.focus("left"))
+
+      test.contains(errors.message(err), "requires Neovim to run inside Herdr")
+    end)
+
+    test.equal(calls, 0)
+  end)
+end)
 
 test.describe("Herdr transport availability", function()
   test.it("is available inside a Herdr pane", function()

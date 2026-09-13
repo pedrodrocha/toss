@@ -14,6 +14,12 @@ local transport = {
     calls[#calls + 1] = { direction = direction, text = text }
     return result.ok()
   end,
+  focus = function()
+    return result.ok()
+  end,
+  available = function()
+    return true
+  end,
 }
 
 toss.config = {}

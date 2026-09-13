@@ -26,6 +26,8 @@ M.codes = {
   no_transport = "no_transport_available",
   invalid_transport = "invalid_transport",
   invalid_transport_result = "invalid_transport_result",
+  invalid_transport_focus_result = "invalid_transport_focus_result",
+  transport_focus = "transport_focus_failed",
   invalid_result = "invalid_result",
   context_capture = "context_capture_failed",
   context_mode = "invalid_context_mode",
@@ -156,12 +158,19 @@ M.which_key_registration = constructor(
 M.transport_not_configured = constructor(M.codes.transport_not_configured, "transport is not configured")
 M.transport_configuration = constructor(
   M.codes.transport_configuration,
-  "transport must be a name or a table with send(direction, text)"
+  "transport must be a name or a table with send(direction, text), focus(direction), and available()"
 )
-M.invalid_transport = constructor(M.codes.invalid_transport, "transport must provide send(direction, text)")
+M.invalid_transport = constructor(
+  M.codes.invalid_transport,
+  "transport must provide send(direction, text), focus(direction), and available()"
+)
 M.invalid_transport_result = constructor(
   M.codes.invalid_transport_result,
   "transport must return a Result"
+)
+M.invalid_transport_focus_result = constructor(
+  M.codes.invalid_transport_focus_result,
+  "transport focus must return a Result"
 )
 M.invalid_result = function(operation)
   return defined(
@@ -184,6 +193,7 @@ M.context_formatting = constructor(M.codes.formatting, "context formatting faile
 M.could_not_format = constructor(M.codes.formatting, "could not format context")
 M.transport_resolution = constructor(M.codes.transport_failure, "transport resolution failed")
 M.transport_failure = constructor(M.codes.transport_failure, "transport failed")
+M.transport_focus = constructor(M.codes.transport_focus, "transport focus failed")
 M.buffer_not_file = constructor(M.codes.buffer_not_file, "current buffer is not a file", "warn")
 M.buffer_without_path = constructor(M.codes.buffer_without_path, "current buffer has no file path", "warn")
 M.invalid_context = constructor(M.codes.invalid_context, "context must be a table")
