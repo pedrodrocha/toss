@@ -151,8 +151,8 @@ implements `available()`, `send(direction, text)`, and `focus(direction)`.
 
 ## Development
 
-Contributor setup, local workflows, and test commands live in
-[DEVELOPMENT.md](DEVELOPMENT.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and
+[DEVELOPMENT.md](DEVELOPMENT.md) for local setup, workflows, and test commands.
 
 ## License
 
