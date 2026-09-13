@@ -31,7 +31,10 @@ local function resolve_transport(config)
     return result.err(errors.transport_configuration())
   end
 
-  if type(configured.send) ~= "function" then
+  if type(configured.send) ~= "function"
+    or type(configured.focus) ~= "function"
+    or type(configured.available) ~= "function"
+  then
     return result.err(errors.invalid_transport())
   end
 
@@ -96,6 +99,19 @@ function M.run(direction, mode, config)
 
   if send_result.kind == "err" then
     return result.err(send_result.error)
+  end
+
+  local focus_ok, focus_result = pcall(transport.focus, direction)
+  if not focus_ok then
+    return result.err(errors.transport_focus(focus_result))
+  end
+
+  if not result.is(focus_result) then
+    return result.err(errors.invalid_transport_focus_result())
+  end
+
+  if focus_result.kind == "err" then
+    return result.err(focus_result.error)
   end
 
   return result.ok()

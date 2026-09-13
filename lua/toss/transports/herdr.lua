@@ -123,6 +123,26 @@ local function run_neighbor(source_pane_id, direction)
   }, "Herdr neighbor lookup")
 end
 
+---@param source_pane_id string
+---@param direction TossDirection
+---@return TossResult<nil>
+local function focus_pane(source_pane_id, direction)
+  local focus_result = run_command({
+    "herdr",
+    "pane",
+    "focus",
+    "--pane",
+    source_pane_id,
+    "--direction",
+    direction,
+  }, "Herdr focus")
+  if focus_result.kind == "err" then
+    return result.err(focus_result.error)
+  end
+
+  return result.ok()
+end
+
 ---@param stdout string|nil
 ---@param direction TossDirection
 ---@return TossResult<string>
@@ -197,6 +217,22 @@ function M.send(direction, text)
   end
 
   return result.ok()
+end
+
+---@param direction TossDirection
+---@return TossResult<nil>
+function M.focus(direction)
+  local direction_result = validate_direction(direction)
+  if direction_result.kind == "err" then
+    return result.err(direction_result.error)
+  end
+
+  local source_result = validate_environment()
+  if source_result.kind == "err" then
+    return result.err(source_result.error)
+  end
+
+  return focus_pane(source_result.value, direction_result.value)
 end
 
 ---@return boolean

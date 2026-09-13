@@ -118,6 +118,7 @@ end
 
 local function with_herdr_send(fake_send, callback)
   local previous_send = herdr.send
+  local previous_focus = herdr.focus
   herdr.send = function(direction, text)
     local sent = fake_send(direction, text)
     if sent == true then
@@ -126,9 +127,13 @@ local function with_herdr_send(fake_send, callback)
 
     return sent
   end
+  herdr.focus = function()
+    return result.ok()
+  end
 
   local ok, err = xpcall(callback, debug.traceback)
   herdr.send = previous_send
+  herdr.focus = previous_focus
 
   if not ok then
     error(err, 0)
@@ -348,6 +353,13 @@ test.describe("toss directions", function()
           calls[#calls + 1] = { direction = direction, text = text }
           return result.ok()
         end,
+        focus = function(direction)
+          calls[#calls + 1] = { direction = direction, focused = true }
+          return result.ok()
+        end,
+        available = function()
+          return true
+        end,
       },
     })
 
@@ -359,10 +371,14 @@ test.describe("toss directions", function()
     end)
 
     local expected_directions = { "left", "down", "up", "right" }
-    test.equal(#calls, #expected_directions)
+    test.equal(#calls, #expected_directions * 2)
     for index, direction in ipairs(expected_directions) do
-      test.equal(calls[index].direction, direction)
-      test.equal(calls[index].text, "@src/domain/user.lua")
+      local send_call = calls[(index * 2) - 1]
+      local focus_call = calls[index * 2]
+      test.equal(send_call.direction, direction)
+      test.equal(send_call.text, "@src/domain/user.lua")
+      test.equal(focus_call.direction, direction)
+      test.equal(focus_call.focused, true)
     end
   end)
 
@@ -371,6 +387,12 @@ test.describe("toss directions", function()
       transport = {
         send = function()
           return result.ok()
+        end,
+        focus = function()
+          return result.ok()
+        end,
+        available = function()
+          return true
         end,
       },
     }
@@ -395,6 +417,12 @@ test.describe("toss directions", function()
           send_calls = send_calls + 1
           return result.ok()
         end,
+        focus = function()
+          error("focus should not run")
+        end,
+        available = function()
+          return true
+        end,
       },
     }
 
@@ -408,6 +436,32 @@ test.describe("toss directions", function()
     test.equal(#notifications, 1)
     test.equal(notifications[1].message, "toss: current buffer is not a file")
     test.equal(notifications[1].level, "warn")
+  end)
+
+  test.it("notifies focus failures through the toss error path", function()
+    toss.config = {
+      transport = {
+        send = function()
+          return result.ok()
+        end,
+        focus = function()
+          return result.err(errors.transport_focus("destination unavailable"))
+        end,
+        available = function()
+          return true
+        end,
+      },
+    }
+
+    local notifications = with_notifications(function()
+      with_fake_context(function()
+        test.equal(toss.right(), false)
+      end)
+    end)
+
+    test.equal(#notifications, 1)
+    test.equal(notifications[1].message, "toss: transport focus failed: destination unavailable")
+    test.equal(notifications[1].level, "error")
   end)
 
   test.it("fails gracefully when no transport is configured", function()
@@ -433,7 +487,10 @@ test.describe("toss directions", function()
     end)
 
     test.equal(#notifications, 1)
-    test.equal(notifications[1].message, "toss: transport must provide send(direction, text)")
+    test.equal(
+      notifications[1].message,
+      "toss: transport must provide send(direction, text), focus(direction), and available()"
+    )
     test.equal(notifications[1].level, "error")
   end)
 end)
