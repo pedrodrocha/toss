@@ -27,6 +27,7 @@ local function with_fake_context(callback)
   rawset(context, "capture", function(origin)
     captured_origin = origin
     return result.ok({
+      kind = "file",
       path = "src/domain/user.lua",
       start_line = nil,
       end_line = nil,

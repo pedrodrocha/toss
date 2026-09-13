@@ -38,6 +38,7 @@ M.codes = {
   buffer_without_path = "buffer_without_path",
   invalid_context = "invalid_context",
   context_range = "invalid_context_range",
+  context_kind = "invalid_context_kind",
   context_path = "invalid_context_path",
   context_text = "invalid_context_text",
   register_setup = "register_setup_failed",
@@ -173,6 +174,9 @@ M.transport_focus = constructor(M.codes.transport_focus, "transport focus failed
 M.buffer_not_file = constructor(M.codes.buffer_not_file, "current buffer is not a file", "warn")
 M.buffer_without_path = constructor(M.codes.buffer_without_path, "current buffer has no file path", "warn")
 M.invalid_context = constructor(M.codes.invalid_context, "context must be a table")
+M.invalid_context_kind = function(kind)
+  return defined(M.codes.context_kind, 'context kind must be "file" or "text"', "error", kind)
+end
 M.invalid_context_path = constructor(M.codes.context_path, "context path must be a non-empty string")
 M.invalid_context_text = constructor(M.codes.context_text, "context text must be a non-empty string")
 M.register_setup = function(message, detail)

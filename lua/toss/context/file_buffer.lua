@@ -73,6 +73,7 @@ function M.capture()
   end
 
   return result.ok({
+    kind = "file",
     path = path,
     start_line = start_line,
     end_line = end_line,

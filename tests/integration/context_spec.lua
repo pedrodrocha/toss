@@ -36,7 +36,9 @@ local function capture_success()
   local capture_result = context.capture()
 
   test.equal(capture_result:is_ok(), true)
-  return assert(capture_result.value)
+  local value = assert(capture_result.value)
+  test.equal(value.kind, "file")
+  return value
 end
 
 local function assert_failure(message)
@@ -59,6 +61,9 @@ local function capture_selection(keys)
   edit(visual_path)
   vim.cmd("normal! " .. keys)
   local capture_result = context.capture()
+  if capture_result:is_ok() then
+    test.equal(capture_result.value.kind, "file")
+  end
   leave_visual_mode()
   return capture_result
 end

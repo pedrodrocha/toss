@@ -17,13 +17,14 @@ function M.capture()
   local register = register_result.value
   if register.path ~= nil and register.start_line ~= nil and register.end_line ~= nil then
     return result.ok({
+      kind = "file",
       path = register.path,
       start_line = register.start_line,
       end_line = register.end_line,
     })
   end
 
-  return result.ok({ text = register.text })
+  return result.ok({ kind = "text", text = register.text })
 end
 
 ---@return TossResult<nil>

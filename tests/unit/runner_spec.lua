@@ -45,7 +45,7 @@ test.describe("toss runner", function()
     with_stubs({
       capture = function(origin)
         captured_origin = origin
-        return result.ok({ path = "src/file.lua" })
+        return result.ok({ kind = "file", path = "src/file.lua" })
       end,
       format = function()
         return result.ok("@src/file.lua")
@@ -63,7 +63,7 @@ test.describe("toss runner", function()
 
   test.it("runs capture, formatting, and transport in order", function()
     local calls = {}
-    local context_value = { path = "src/file.lua" }
+    local context_value = { kind = "file", path = "src/file.lua" }
     local transport = local_transport
     transport.reset()
 
@@ -124,7 +124,7 @@ test.describe("toss runner", function()
 
     with_stubs({
       capture = function()
-        return result.ok({ path = "src/file.lua" })
+        return result.ok({ kind = "file", path = "src/file.lua" })
       end,
       format = function()
         return result.err(formatter_error)
@@ -150,7 +150,7 @@ test.describe("toss runner", function()
 
     with_stubs({
       capture = function()
-        return result.ok({ path = "src/file.lua" })
+        return result.ok({ kind = "file", path = "src/file.lua" })
       end,
       format = function()
         return result.ok("@src/file.lua")
@@ -177,7 +177,7 @@ test.describe("toss runner", function()
 
     with_stubs({
       capture = function()
-        return result.ok({ path = "src/file.lua" })
+        return result.ok({ kind = "file", path = "src/file.lua" })
       end,
       format = function()
         return result.ok("@src/file.lua")
@@ -207,7 +207,7 @@ test.describe("toss runner", function()
   test.it("converts transport exceptions into failures", function()
     with_stubs({
       capture = function()
-        return result.ok({ path = "src/file.lua" })
+        return result.ok({ kind = "file", path = "src/file.lua" })
       end,
       format = function()
         return result.ok("@src/file.lua")
@@ -237,7 +237,7 @@ test.describe("toss runner", function()
 
     with_stubs({
       capture = function()
-        return result.ok({ path = "src/file.lua" })
+        return result.ok({ kind = "file", path = "src/file.lua" })
       end,
       format = function()
         return result.ok("@src/file.lua")
@@ -271,7 +271,7 @@ test.describe("toss runner", function()
       local focus_error
       with_stubs({
         capture = function()
-          return result.ok({ path = "src/file.lua" })
+          return result.ok({ kind = "file", path = "src/file.lua" })
         end,
         format = function()
           return result.ok("@src/file.lua")
@@ -311,7 +311,7 @@ test.describe("toss runner", function()
     with_stubs({
       capture = function()
         capture_calls = capture_calls + 1
-        return result.ok({ path = "src/file.lua" })
+        return result.ok({ kind = "file", path = "src/file.lua" })
       end,
     }, function()
       local run_result = runner.run("right", nil, {})

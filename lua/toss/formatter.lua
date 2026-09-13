@@ -6,7 +6,7 @@ local result = require("toss.result")
 local M = {}
 
 ---@param error_value TossError
----@return TossErr
+---@return TossResult<string>
 local function invalid(error_value)
   return result.err(error_value)
 end
@@ -17,21 +17,9 @@ local function is_positive_integer(value)
   return type(value) == "number" and value >= 1 and value % 1 == 0
 end
 
----@param ctx TossContext|nil
+---@param ctx TossFileContext
 ---@return TossResult<string>
-function M.format(ctx)
-  if type(ctx) ~= "table" then
-    return invalid(errors.invalid_context())
-  end
-
-  if ctx.path == nil then
-    if type(ctx.text) ~= "string" or ctx.text == "" then
-      return invalid(errors.invalid_context_text())
-    end
-
-    return result.ok(ctx.text)
-  end
-
+local function format_file(ctx)
   if type(ctx.path) ~= "string" or ctx.path == "" then
     return invalid(errors.invalid_context_path())
   end
@@ -56,6 +44,34 @@ function M.format(ctx)
   end
 
   return result.ok(string.format("@%s#L%d-L%d", ctx.path, start_line, end_line))
+end
+
+---@param ctx TossTextContext
+---@return TossResult<string>
+local function format_text(ctx)
+  if type(ctx.text) ~= "string" or ctx.text == "" then
+    return invalid(errors.invalid_context_text())
+  end
+
+  return result.ok(ctx.text)
+end
+
+---@param ctx TossContext|nil
+---@return TossResult<string>
+function M.format(ctx)
+  if type(ctx) ~= "table" then
+    return invalid(errors.invalid_context())
+  end
+
+  if ctx.kind == "file" then
+    return format_file(ctx)
+  end
+
+  if ctx.kind == "text" then
+    return format_text(ctx)
+  end
+
+  return invalid(errors.invalid_context_kind(ctx.kind))
 end
 
 return M
