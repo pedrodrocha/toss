@@ -36,8 +36,9 @@ individual entries.
 
 ## Requirements
 
-- Neovim 0.10 or newer.
-- Herdr, which is currently the only production transport.
+- [Neovim](https://neovim.io/) 0.10 or newer.
+- [Herdr](https://github.com/herdrdev/herdr), which is currently the only
+  production transport.
 - Neovim running inside a Herdr pane, with `herdr` on `$PATH` and Herdr's
   `HERDR_ENV=1` and `HERDR_PANE_ID` environment variables available.
 
@@ -150,8 +151,9 @@ A transport is responsible for:
 
 ### Herdr
 
-Herdr is the only production transport today. To use it, run Neovim inside a
-Herdr pane with `herdr` on `$PATH` and Herdr's environment variables available
+[Herdr](https://github.com/herdrdev/herdr) is the only production transport
+today. To use it, run Neovim inside a Herdr pane with `herdr` on `$PATH` and
+Herdr's environment variables available
 (`HERDR_ENV=1` and `HERDR_PANE_ID`).
 
 Use `transport = "herdr"` to select it directly. With `transport = "auto"`,
