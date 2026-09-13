@@ -22,6 +22,31 @@ local function run(direction, mode)
   return true
 end
 
+local function reset_mappings()
+  with_vim({
+    keymap = {
+      set = function() end,
+      del = function() end,
+    },
+  }, function()
+    local setup_result = mappings.setup(false, run)
+    test.equal(setup_result.kind, "ok")
+  end)
+end
+
+local function only_left(key)
+  return {
+    left = key,
+    down = false,
+    up = false,
+    right = false,
+    yank_left = false,
+    yank_down = false,
+    yank_up = false,
+    yank_right = false,
+  }
+end
+
 test.describe("toss mappings", function()
   test.it("does not register disabled mappings", function()
     local calls = 0
@@ -89,6 +114,7 @@ test.describe("toss mappings", function()
   end)
 
   test.it("supports overrides and disabled directions", function()
+    reset_mappings()
     local calls = {}
 
     with_vim({
@@ -117,6 +143,7 @@ test.describe("toss mappings", function()
   end)
 
   test.it("uses one mapping configuration for both context modes", function()
+    reset_mappings()
     local calls = {}
 
     with_vim({
@@ -152,7 +179,159 @@ test.describe("toss mappings", function()
     end
   end)
 
+  test.it("removes old mappings before installing a reconfigured set", function()
+    reset_mappings()
+    local registered = {}
+    local removed = {}
+
+    with_vim({
+      keymap = {
+        set = function(_, key)
+          registered[#registered + 1] = key
+        end,
+        del = function(mode, key)
+          removed[#removed + 1] = { mode = mode, key = key }
+        end,
+      },
+    }, function()
+      test.equal(mappings.setup(only_left("<leader>told"), run).kind, "ok")
+      test.equal(mappings.setup(only_left("<leader>tnew"), run).kind, "ok")
+    end)
+
+    test.equal(#registered, 2)
+    test.equal(registered[1], "<leader>told")
+    test.equal(registered[2], "<leader>tnew")
+    test.equal(#removed, 2)
+    test.equal(removed[1].mode, "n")
+    test.equal(removed[1].key, "<leader>told")
+    test.equal(removed[2].mode, "x")
+    test.equal(removed[2].key, "<leader>told")
+  end)
+
+  test.it("removes all owned mappings when disabled", function()
+    reset_mappings()
+    local removed = {}
+
+    with_vim({
+      keymap = {
+        set = function() end,
+        del = function(mode, key)
+          removed[#removed + 1] = { mode = mode, key = key }
+        end,
+      },
+    }, function()
+      test.equal(mappings.setup(true, run).kind, "ok")
+      test.equal(mappings.setup(false, run).kind, "ok")
+    end)
+
+    test.equal(#removed, 16)
+  end)
+
+  test.it("does not repeat an identical setup", function()
+    reset_mappings()
+    local registered = 0
+    local removed = 0
+
+    with_vim({
+      keymap = {
+        set = function()
+          registered = registered + 1
+        end,
+        del = function()
+          removed = removed + 1
+        end,
+      },
+    }, function()
+      test.equal(mappings.setup(only_left("<leader>tleft"), run).kind, "ok")
+      test.equal(mappings.setup(only_left("<leader>tleft"), run).kind, "ok")
+    end)
+
+    test.equal(registered, 1)
+    test.equal(removed, 0)
+  end)
+
+  test.it("validates configuration before removing active mappings", function()
+    reset_mappings()
+    local registered = 0
+    local removed = 0
+
+    with_vim({
+      keymap = {
+        set = function()
+          registered = registered + 1
+        end,
+        del = function()
+          removed = removed + 1
+        end,
+      },
+    }, function()
+      test.equal(mappings.setup(only_left("<leader>tactive"), run).kind, "ok")
+      ---@type any
+      local invalid_mappings = { left = 42 }
+      local setup_result = mappings.setup(invalid_mappings, run)
+
+      test.equal(setup_result.kind, "err")
+      test.equal(registered, 1)
+      test.equal(removed, 0)
+    end)
+  end)
+
+  test.it("reports mapping removal failures before installing the new setup", function()
+    reset_mappings()
+    local should_fail = false
+    local registered = 0
+
+    with_vim({
+      keymap = {
+        set = function()
+          registered = registered + 1
+        end,
+        del = function(mode)
+          if should_fail and mode == "n" then
+            error("delete exploded")
+          end
+        end,
+      },
+    }, function()
+      test.equal(mappings.setup(only_left("<leader>told"), run).kind, "ok")
+      should_fail = true
+      local setup_result = mappings.setup(only_left("<leader>tnew"), run)
+
+      test.equal(setup_result.kind, "err")
+      test.contains(errors.message(setup_result.error), "could not remove left mapping")
+      test.equal(registered, 1)
+    end)
+  end)
+
+  test.it("reports mapping installation failures", function()
+    reset_mappings()
+    local should_fail = false
+    local removed = 0
+
+    with_vim({
+      keymap = {
+        set = function(_, key)
+          if should_fail and key == "<leader>tnew" then
+            error("set exploded")
+          end
+        end,
+        del = function()
+          removed = removed + 1
+        end,
+      },
+    }, function()
+      test.equal(mappings.setup(only_left("<leader>told"), run).kind, "ok")
+      should_fail = true
+      local setup_result = mappings.setup(only_left("<leader>tnew"), run)
+
+      test.equal(setup_result.kind, "err")
+      test.contains(errors.message(setup_result.error), "could not register left mapping")
+      test.equal(removed, 2)
+    end)
+  end)
+
   test.it("returns configuration and API errors without notifying", function()
+    reset_mappings()
     ---@type any
     local invalid_configuration = "enabled"
     local configuration_result = mappings.setup(invalid_configuration, run)

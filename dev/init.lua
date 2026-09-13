@@ -3,6 +3,13 @@ local init_path = source:sub(1, 1) == "@" and source:sub(2) or source
 local repository_root = vim.fn.fnamemodify(init_path, ":p:h:h")
 local lua_root = repository_root .. "/lua"
 
+-- Remove mappings owned by the previous development load before discarding its
+-- in-memory ownership state.
+local previous_toss = package.loaded["toss"]
+if type(previous_toss) == "table" and type(previous_toss.setup) == "function" then
+  pcall(previous_toss.setup, { mappings = false })
+end
+
 for module_name in pairs(package.loaded) do
   if module_name == "toss" or module_name:match("^toss%.") then
     package.loaded[module_name] = nil

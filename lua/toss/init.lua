@@ -85,6 +85,7 @@ function M.setup(opts)
     return M
   end
 
+  local previous_mappings = M.config.mappings
   for key, value in pairs(opts) do
     M.config[key] = value
   end
@@ -96,6 +97,9 @@ function M.setup(opts)
 
   local mappings_result = mappings.setup(M.config.mappings, run)
   if mappings_result.kind == "err" then
+    -- Mapping setup is transactional. Keep the configuration in sync with the
+    -- mappings that are still active when validation or registration fails.
+    M.config.mappings = previous_mappings
     notify(mappings_result.error)
   end
 

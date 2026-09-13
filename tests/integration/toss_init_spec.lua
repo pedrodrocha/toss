@@ -28,6 +28,19 @@ local function with_herdr_environment(callback)
   end
 end
 
+local function only_left(key)
+  return {
+    left = key,
+    down = false,
+    up = false,
+    right = false,
+    yank_left = false,
+    yank_down = false,
+    yank_up = false,
+    yank_right = false,
+  }
+end
+
 test.describe("toss directions", function()
   test.it("sends the normal-mode file payload to each direction", function()
     local calls = {}
@@ -138,6 +151,63 @@ test.describe("toss mappings", function()
       test.truthy(vim.fn.maparg(key, "x") ~= "")
     end
   end)
+
+  test.it("removes old mappings when the key configuration changes", function()
+    toss.setup({ mappings = only_left("<leader>told") })
+    test.truthy(vim.fn.maparg("<leader>told", "n") ~= "")
+
+    toss.setup({ mappings = only_left("<leader>tnew") })
+
+    test.equal(vim.fn.maparg("<leader>told", "n"), "")
+    test.equal(vim.fn.maparg("<leader>told", "x"), "")
+    test.truthy(vim.fn.maparg("<leader>tnew", "n") ~= "")
+    test.truthy(vim.fn.maparg("<leader>tnew", "x") ~= "")
+  end)
+
+  test.it("removes all toss mappings when mapping setup is disabled", function()
+    toss.setup({ mappings = true })
+    toss.setup({ mappings = false })
+
+    local keys = { "<leader>th", "<leader>tj", "<leader>tk", "<leader>tl" }
+    for _, key in ipairs(keys) do
+      test.equal(vim.fn.maparg(key, "n"), "")
+      test.equal(vim.fn.maparg(key, "x"), "")
+    end
+  end)
+
+  test.it("leaves active mappings unchanged for invalid configuration", function()
+    toss.setup({ mappings = only_left("<leader>tvalid") })
+    local active_configuration = toss.config.mappings
+    local notifications = {}
+    local previous_notify = vim.notify
+    vim.notify = function(message)
+      notifications[#notifications + 1] = message
+    end
+
+    ---@type any
+    local invalid_mappings = { left = 42 }
+    toss.setup({ mappings = invalid_mappings })
+
+    vim.notify = previous_notify
+    test.equal(toss.config.mappings, active_configuration)
+    test.truthy(vim.fn.maparg("<leader>tvalid", "n") ~= "")
+    test.equal(vim.fn.maparg("<leader>tnew", "n"), "")
+    test.equal(#notifications, 1)
+  end)
+
+  test.it("does not remove a user mapping that replaced a toss mapping", function()
+    local user_key = "<leader>tuser"
+    toss.setup({ mappings = only_left(user_key) })
+    vim.keymap.set("n", user_key, function() end)
+
+    toss.setup({ mappings = only_left("<leader>treplaced") })
+
+    test.truthy(vim.fn.maparg(user_key, "n") ~= "")
+    test.equal(vim.fn.maparg(user_key, "x"), "")
+    vim.api.nvim_del_keymap("n", user_key)
+  end)
+
+  toss.setup({ mappings = false })
 end)
 
 vim.fn.delete(fixture_path)
