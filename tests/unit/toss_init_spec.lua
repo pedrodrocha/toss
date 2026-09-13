@@ -23,9 +23,9 @@ _G.vim = {
 
 local function with_fake_context(callback)
   local previous_capture = context.capture
-  local captured_mode
-  rawset(context, "capture", function(mode)
-    captured_mode = mode
+  local captured_origin
+  rawset(context, "capture", function(origin)
+    captured_origin = origin
     return result.ok({
       path = "src/domain/user.lua",
       start_line = nil,
@@ -40,7 +40,7 @@ local function with_fake_context(callback)
     error(err, 0)
   end
 
-  return captured_mode
+  return captured_origin
 end
 
 local function with_notifications(callback)
@@ -253,9 +253,10 @@ test.describe("toss transport configuration", function()
       calls[#calls + 1] = { direction = direction, text = text }
       return true
     end, function()
-      with_fake_context(function()
+      local captured_origin = with_fake_context(function()
         test.equal(toss.right(), true)
       end)
+      test.equal(captured_origin, "file_buffer")
     end)
 
     test.equal(#calls, 1)
@@ -400,15 +401,15 @@ test.describe("toss directions", function()
     end
   end)
 
-  test.it("passes an explicit yank mode through the public API", function()
+  test.it("passes an explicit yank origin through the public API", function()
     local_transport.reset()
     toss.config = { transport = local_transport }
 
-    local captured_mode = with_fake_context(function()
+    local captured_origin = with_fake_context(function()
       test.equal(toss.left("yank"), true)
     end)
 
-    test.equal(captured_mode, "yank")
+    test.equal(captured_origin, "yank")
   end)
 
   test.it("notifies unsupported context as a warning and does not send", function()

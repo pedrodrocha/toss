@@ -20,11 +20,11 @@ test.describe("toss errors", function()
     test.equal(errors.message(err), "Herdr send-text failed (exit code 1): pane is invalid")
   end)
 
-  test.it("describes invalid context modes", function()
-    local err = errors.invalid_context_mode("other")
+  test.it("describes invalid context origins", function()
+    local err = errors.invalid_context_origin("other")
 
-    test.equal(err.code, errors.codes.context_mode)
-    test.equal(errors.message(err), 'context mode must be "file" or "yank": other')
+    test.equal(err.code, errors.codes.context_origin)
+    test.equal(errors.message(err), 'context origin must be "file_buffer" or "yank": other')
   end)
 
   test.it("normalizes unsupported levels to errors", function()

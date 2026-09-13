@@ -30,10 +30,10 @@ local which_key = require("toss.which_key")
 ---@class Toss
 ---@field config TossConfig
 ---@field setup fun(opts: TossSetupOptions|nil): Toss
----@field left fun(mode: TossContextMode|nil): boolean
----@field down fun(mode: TossContextMode|nil): boolean
----@field up fun(mode: TossContextMode|nil): boolean
----@field right fun(mode: TossContextMode|nil): boolean
+---@field left fun(origin: TossOrigin|nil): boolean
+---@field down fun(origin: TossOrigin|nil): boolean
+---@field up fun(origin: TossOrigin|nil): boolean
+---@field right fun(origin: TossOrigin|nil): boolean
 
 ---@class TossSetupOptions
 ---@field mappings boolean|TossMappings|nil
@@ -61,11 +61,14 @@ local function notify(err)
 end
 
 ---@param direction TossDirection
----@param mode TossContextMode|nil
+---@param origin TossOrigin|nil
 ---@return boolean
-local function run(direction, mode)
-  mode = mode or "file"
-  local run_result = runner.run(direction, mode, M.config)
+local function run(direction, origin)
+  if origin == nil then
+    origin = "file_buffer"
+  end
+
+  local run_result = runner.run(direction, origin, M.config)
   if run_result:is_err() then
     notify(run_result.error)
   end
@@ -111,28 +114,28 @@ function M.setup(opts)
   return M
 end
 
----@param mode TossContextMode|nil
+---@param origin TossOrigin|nil
 ---@return boolean
-function M.left(mode)
-  return run("left", mode)
+function M.left(origin)
+  return run("left", origin)
 end
 
----@param mode TossContextMode|nil
+---@param origin TossOrigin|nil
 ---@return boolean
-function M.down(mode)
-  return run("down", mode)
+function M.down(origin)
+  return run("down", origin)
 end
 
----@param mode TossContextMode|nil
+---@param origin TossOrigin|nil
 ---@return boolean
-function M.up(mode)
-  return run("up", mode)
+function M.up(origin)
+  return run("up", origin)
 end
 
----@param mode TossContextMode|nil
+---@param origin TossOrigin|nil
 ---@return boolean
-function M.right(mode)
-  return run("right", mode)
+function M.right(origin)
+  return run("right", origin)
 end
 
 return M

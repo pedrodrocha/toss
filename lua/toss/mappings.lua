@@ -1,5 +1,5 @@
 ---@class TossMappingModule
----@field setup fun(configured: boolean|TossMappings|nil, run: fun(direction: TossDirection, mode: TossContextMode): boolean): TossResult<nil>
+---@field setup fun(configured: boolean|TossMappings|nil, run: fun(direction: TossDirection, origin: TossOrigin): boolean): TossResult<nil>
 
 local errors = require("toss.errors")
 local result = require("toss.result")
@@ -13,8 +13,8 @@ local directions = {
   { name = "right", key = "l" },
 }
 local mapping_contexts = {
-  { name = "", mode = "file", prefix = "<leader>t", description = "Toss " },
-  { name = "yank_", mode = "yank", prefix = "<leader>ty", description = "Toss yank " },
+  { name = "", origin = "file_buffer", prefix = "<leader>t", description = "Toss " },
+  { name = "yank_", origin = "yank", prefix = "<leader>ty", description = "Toss yank " },
 }
 
 local installed_mappings = {}
@@ -51,7 +51,7 @@ local function normalize(configured)
         specifications[#specifications + 1] = {
           name = name,
           direction = direction.name,
-          mode = context.mode,
+          origin = context.origin,
           key = key,
           description = context.description .. direction.name,
         }
@@ -97,7 +97,7 @@ end
 
 local function make_mapping(specification, run)
   local callback = function()
-    return run(specification.direction, specification.mode)
+    return run(specification.direction, specification.origin)
   end
   return {
     name = specification.name,
@@ -125,7 +125,7 @@ local function matches_installed(specifications, run)
 end
 
 ---@param configured boolean|TossMappings|nil
----@param run fun(direction: TossDirection, mode: TossContextMode): boolean
+---@param run fun(direction: TossDirection, origin: TossOrigin): boolean
 ---@return TossResult<nil>
 function M.setup(configured, run)
   local normalized = normalize(configured)

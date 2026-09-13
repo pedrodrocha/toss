@@ -64,13 +64,13 @@ local function capture_selection(keys)
 end
 
 test.describe("context capture", function()
-  test.it("rejects an unknown context mode", function()
+  test.it("rejects an unknown context origin", function()
     ---@type any
-    local invalid_mode = "other"
-    local capture_result = context.capture(invalid_mode)
+    local invalid_origin = "other"
+    local capture_result = context.capture(invalid_origin)
 
     test.equal(capture_result:is_err(), true)
-    test.equal(errors.message(capture_result.error), 'context mode must be "file" or "yank": other')
+    test.equal(errors.message(capture_result.error), 'context origin must be "file_buffer" or "yank": other')
   end)
 
   test.it("captures a normal file relative to the project root", function()
