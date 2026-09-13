@@ -39,13 +39,6 @@ Inside Herdr, open a project file and run:
 
 If which-key is installed, the `<leader>t` group is labeled `󰧑 toss`.
 
-Outside Herdr, use this temporary local setup:
-
-```vim
-:lua local result = require("toss.result"); require("toss").setup({ transport = { send = function(direction, text) print(direction .. ": " .. text); return result.ok() end, focus = function() return result.ok() end, available = function() return true end } })
-:lua require("toss").right()
-```
-
 After editing Lua files, run `:luafile dev/init.lua` again to reload the development setup.
 
 ## Checks
