@@ -103,6 +103,7 @@ local function with_keymaps(callback)
           options = options,
         }
       end,
+      del = function() end,
     },
   }
 
@@ -114,6 +115,12 @@ local function with_keymaps(callback)
   end
 
   return calls
+end
+
+local function clear_mappings()
+  with_keymaps(function()
+    toss.setup({ mappings = false })
+  end)
 end
 
 local function with_herdr_send(fake_send, callback)
@@ -205,6 +212,7 @@ test.describe("toss setup", function()
   end)
 
   test.it("notifies when mapping setup fails", function()
+    clear_mappings()
     toss.config = {}
 
     local notifications = with_notifications(function()

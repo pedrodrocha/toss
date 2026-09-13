@@ -19,6 +19,7 @@ M.codes = {
   setup_options = "invalid_setup_options",
   mapping_configuration = "invalid_mapping_configuration",
   mapping_setup = "mapping_setup_failed",
+  mapping_teardown = "mapping_teardown_failed",
   which_key_registration = "which_key_registration_failed",
   transport_not_configured = "transport_not_configured",
   transport_configuration = "invalid_transport_configuration",
@@ -138,7 +139,11 @@ M.mapping_setup = constructor(M.codes.mapping_setup, "mapping setup failed")
 M.mapping_registration = function(direction, detail)
   return defined(M.codes.mapping_setup, "could not register " .. direction .. " mapping", "error", detail)
 end
+M.mapping_removal = function(direction, detail)
+  return defined(M.codes.mapping_teardown, "could not remove " .. direction .. " mapping", "error", detail)
+end
 M.keymap_unavailable = constructor(M.codes.mapping_setup, "keymap API is unavailable")
+M.keymap_delete_unavailable = constructor(M.codes.mapping_teardown, "keymap deletion API is unavailable")
 M.which_key_registration = constructor(M.codes.which_key_registration, "which-key registration failed", "warn")
 M.transport_not_configured = constructor(M.codes.transport_not_configured, "transport is not configured")
 M.transport_configuration = constructor(
