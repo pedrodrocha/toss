@@ -136,7 +136,7 @@ local function focus_pane(source_pane_id, direction)
     "--direction",
     direction,
   }, "Herdr focus")
-  if focus_result.kind == "err" then
+  if focus_result:is_err() then
     return result.err(focus_result.error)
   end
 
@@ -171,19 +171,19 @@ end
 ---@return TossResult<string>
 function M.neighbor(direction)
   local direction_result = validate_direction(direction)
-  if direction_result.kind == "err" then
+  if direction_result:is_err() then
     return direction_result
   end
 
   local source_result = validate_environment()
-  if source_result.kind == "err" then
+  if source_result:is_err() then
     return source_result
   end
 
   local source_pane_id = source_result.value
   local direction_value = direction_result.value
   local command_result = run_neighbor(source_pane_id, direction_value)
-  if command_result.kind == "err" then
+  if command_result:is_err() then
     return command_result
   end
 
@@ -200,7 +200,7 @@ function M.send(direction, text)
   end
 
   local neighbor_result = M.neighbor(direction)
-  if neighbor_result.kind == "err" then
+  if neighbor_result:is_err() then
     return result.err(neighbor_result.error)
   end
 
@@ -212,7 +212,7 @@ function M.send(direction, text)
     destination_pane_id,
     text,
   }, "Herdr send-text")
-  if send_result.kind == "err" then
+  if send_result:is_err() then
     return result.err(send_result.error)
   end
 
@@ -223,12 +223,12 @@ end
 ---@return TossResult<nil>
 function M.focus(direction)
   local direction_result = validate_direction(direction)
-  if direction_result.kind == "err" then
+  if direction_result:is_err() then
     return result.err(direction_result.error)
   end
 
   local source_result = validate_environment()
-  if source_result.kind == "err" then
+  if source_result:is_err() then
     return result.err(source_result.error)
   end
 
@@ -237,7 +237,7 @@ end
 
 ---@return boolean
 function M.available()
-  return validate_environment().kind == "ok"
+  return validate_environment():is_ok()
 end
 
 return M

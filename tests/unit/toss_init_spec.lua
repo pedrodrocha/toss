@@ -365,7 +365,7 @@ test.describe("toss automatic transport selection", function()
     transports.registry.first = previous_first
     transports.registry.second = previous_second
 
-    test.equal(selection_result.kind, "ok")
+    test.equal(selection_result:is_ok(), true)
     test.equal(selection_result.value, second_transport)
     test.equal(checks[1], "first")
     test.equal(checks[2], "second")

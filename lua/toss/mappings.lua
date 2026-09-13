@@ -129,7 +129,7 @@ end
 ---@return TossResult<nil>
 function M.setup(configured, run)
   local normalized = normalize(configured)
-  if normalized.kind == "err" then
+  if normalized:is_err() then
     return normalized
   end
 

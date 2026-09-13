@@ -34,7 +34,7 @@ test.describe("toss which-key integration", function()
     end, function()
       local setup_result = which_key.setup(true)
 
-      test.equal(setup_result.kind, "ok")
+      test.equal(setup_result:is_ok(), true)
     end)
 
     test.equal(registration[1][1], "<leader>t")
@@ -54,7 +54,7 @@ test.describe("toss which-key integration", function()
     end, function()
       local setup_result = which_key.setup(true)
 
-      test.equal(setup_result.kind, "err")
+      test.equal(setup_result:is_err(), true)
       local err = setup_result.error
       test.contains(errors.message(err), "which-key registration failed: ")
       test.contains(errors.message(err), "registration exploded")
@@ -68,7 +68,7 @@ test.describe("toss which-key integration", function()
     end, function()
       local setup_result = which_key.setup(true)
 
-      test.equal(setup_result.kind, "ok")
+      test.equal(setup_result:is_ok(), true)
     end)
   end)
 
@@ -81,7 +81,7 @@ test.describe("toss which-key integration", function()
     end, function()
       local setup_result = which_key.setup(false)
 
-      test.equal(setup_result.kind, "ok")
+      test.equal(setup_result:is_ok(), true)
     end)
 
     test.equal(loaded, false)

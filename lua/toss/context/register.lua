@@ -138,7 +138,7 @@ local function record(event, bufnr)
   end
 
   local register_result = read_register()
-  if register_result.kind == "err" then
+  if register_result:is_err() then
     return result.err(register_result.error)
   end
 
@@ -172,7 +172,7 @@ end
 ---@return TossResult<TossRegisterRecord>
 function M.current()
   local register_result = read_register()
-  if register_result.kind == "err" then
+  if register_result:is_err() then
     return result.err(register_result.error)
   end
 

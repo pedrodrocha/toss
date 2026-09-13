@@ -30,7 +30,7 @@ local function reset_mappings()
     },
   }, function()
     local setup_result = mappings.setup(false, run)
-    test.equal(setup_result.kind, "ok")
+    test.equal(setup_result:is_ok(), true)
   end)
 end
 
@@ -60,7 +60,7 @@ test.describe("toss mappings", function()
     }, function()
       local setup_result = mappings.setup(false, run)
 
-      test.equal(setup_result.kind, "ok")
+      test.equal(setup_result:is_ok(), true)
     end)
 
     test.equal(calls, 0)
@@ -84,7 +84,7 @@ test.describe("toss mappings", function()
     }, function()
       local setup_result = mappings.setup(true, run)
 
-      test.equal(setup_result.kind, "ok")
+      test.equal(setup_result:is_ok(), true)
     end)
 
     local expected = {
@@ -133,7 +133,7 @@ test.describe("toss mappings", function()
         yank_right = false,
       }, run)
 
-      test.equal(setup_result.kind, "ok")
+      test.equal(setup_result:is_ok(), true)
     end)
 
     test.equal(#calls, 3)
@@ -160,7 +160,7 @@ test.describe("toss mappings", function()
     }, function()
       local setup_result = mappings.setup({ yank_left = "<leader>tyH", yank_down = false }, run)
 
-      test.equal(setup_result.kind, "ok")
+      test.equal(setup_result:is_ok(), true)
     end)
 
     local expected = {
@@ -194,8 +194,8 @@ test.describe("toss mappings", function()
         end,
       },
     }, function()
-      test.equal(mappings.setup(only_left("<leader>told"), run).kind, "ok")
-      test.equal(mappings.setup(only_left("<leader>tnew"), run).kind, "ok")
+      test.equal(mappings.setup(only_left("<leader>told"), run):is_ok(), true)
+      test.equal(mappings.setup(only_left("<leader>tnew"), run):is_ok(), true)
     end)
 
     test.equal(#registered, 2)
@@ -220,8 +220,8 @@ test.describe("toss mappings", function()
         end,
       },
     }, function()
-      test.equal(mappings.setup(true, run).kind, "ok")
-      test.equal(mappings.setup(false, run).kind, "ok")
+      test.equal(mappings.setup(true, run):is_ok(), true)
+      test.equal(mappings.setup(false, run):is_ok(), true)
     end)
 
     test.equal(#removed, 16)
@@ -242,8 +242,8 @@ test.describe("toss mappings", function()
         end,
       },
     }, function()
-      test.equal(mappings.setup(only_left("<leader>tleft"), run).kind, "ok")
-      test.equal(mappings.setup(only_left("<leader>tleft"), run).kind, "ok")
+      test.equal(mappings.setup(only_left("<leader>tleft"), run):is_ok(), true)
+      test.equal(mappings.setup(only_left("<leader>tleft"), run):is_ok(), true)
     end)
 
     test.equal(registered, 1)
@@ -265,12 +265,12 @@ test.describe("toss mappings", function()
         end,
       },
     }, function()
-      test.equal(mappings.setup(only_left("<leader>tactive"), run).kind, "ok")
+      test.equal(mappings.setup(only_left("<leader>tactive"), run):is_ok(), true)
       ---@type any
       local invalid_mappings = { left = 42 }
       local setup_result = mappings.setup(invalid_mappings, run)
 
-      test.equal(setup_result.kind, "err")
+      test.equal(setup_result:is_err(), true)
       test.equal(registered, 1)
       test.equal(removed, 0)
     end)
@@ -293,11 +293,11 @@ test.describe("toss mappings", function()
         end,
       },
     }, function()
-      test.equal(mappings.setup(only_left("<leader>told"), run).kind, "ok")
+      test.equal(mappings.setup(only_left("<leader>told"), run):is_ok(), true)
       should_fail = true
       local setup_result = mappings.setup(only_left("<leader>tnew"), run)
 
-      test.equal(setup_result.kind, "err")
+      test.equal(setup_result:is_err(), true)
       test.contains(errors.message(setup_result.error), "could not remove left mapping")
       test.equal(registered, 1)
     end)
@@ -320,11 +320,11 @@ test.describe("toss mappings", function()
         end,
       },
     }, function()
-      test.equal(mappings.setup(only_left("<leader>told"), run).kind, "ok")
+      test.equal(mappings.setup(only_left("<leader>told"), run):is_ok(), true)
       should_fail = true
       local setup_result = mappings.setup(only_left("<leader>tnew"), run)
 
-      test.equal(setup_result.kind, "err")
+      test.equal(setup_result:is_err(), true)
       test.contains(errors.message(setup_result.error), "could not register left mapping")
       test.equal(removed, 2)
     end)
@@ -335,13 +335,13 @@ test.describe("toss mappings", function()
     ---@type any
     local invalid_configuration = "enabled"
     local configuration_result = mappings.setup(invalid_configuration, run)
-    test.equal(configuration_result.kind, "err")
+    test.equal(configuration_result:is_err(), true)
     test.equal(errors.message(configuration_result.error), "mappings must be true or a table")
 
     with_vim({}, function()
       local setup_result = mappings.setup(true, run)
 
-      test.equal(setup_result.kind, "err")
+      test.equal(setup_result:is_err(), true)
       test.equal(errors.message(setup_result.error), "keymap API is unavailable")
     end)
   end)

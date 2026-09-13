@@ -29,7 +29,7 @@ local function with_stubs(stubs, callback)
 end
 
 local function assert_failure(outcome)
-  test.equal(outcome.kind, "err")
+  test.equal(outcome:is_err(), true)
   return outcome.error
 end
 
@@ -55,7 +55,7 @@ test.describe("toss runner", function()
         transport = local_transport,
       })
 
-      test.equal(run_result.kind, "ok")
+      test.equal(run_result:is_ok(), true)
     end)
 
     test.equal(captured_mode, "yank")
@@ -79,7 +79,7 @@ test.describe("toss runner", function()
     }, function()
       local run_result = runner.run("right", nil, { transport = transport })
 
-      test.equal(run_result.kind, "ok")
+      test.equal(run_result:is_ok(), true)
     end)
 
     test.equal(calls[1].step, "capture")
