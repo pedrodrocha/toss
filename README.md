@@ -26,9 +26,9 @@ Install `pedrodrocha/toss.nvim` with your plugin manager. For example, with
 }
 ```
 
-`toss.nvim` does not create mappings by default. Set `mappings = true` to use
-the defaults, or provide a mapping table to customize them. `which_key = true`
-optionally registers the `<leader>t` group when which-key is installed.
+`mappings = true` opts into toss's default keymaps. Leave mappings unset
+to use only the Lua API, or pass a mapping table to customize or disable
+individual entries.
 
 ## Context and payloads
 
@@ -120,31 +120,39 @@ Set `mappings = false` to remove toss's mappings.
 
 ## Transport
 
-The initial transport is Herdr. For the setup above to work:
+A transport is the delivery adapter between `toss.nvim` and the pane system
+around Neovim. The core plugin only captures context and formats a text
+reference. The transport receives that reference plus a direction, then uses
+its own pane model to find the adjacent destination and send the text there.
 
-- use a recent Neovim; Neovim 0.10+ is required, and the project currently
-  tests Neovim 0.12.5;
-- run Neovim inside a Herdr pane, normally through Ghostty;
-- have the `herdr` executable available on `$PATH`;
-- preserve Herdr's `HERDR_ENV=1` and `HERDR_PANE_ID` environment variables.
+A transport is responsible for:
 
-With `transport = "auto"`, toss selects the available transport (currently
-Herdr) when that environment is available. This is transport detection, not
-agent detection. You can select Herdr explicitly with `transport = "herdr"`.
-Herdr resolves the neighbor in the requested direction and receives the text
-without submitting it. A missing environment, executable, or adjacent pane
-produces a friendly `toss:` notification.
+- deciding whether it is available in the current session;
+- resolving `left`, `down`, `up`, or `right` to a destination pane;
+- sending the exact payload text without adding a newline, pressing Enter, or
+  submitting it;
+- focusing the target pane after a successful toss;
+- reporting unavailable panes, commands, or environments as friendly `toss:`
+  notifications.
 
-## Tests
+### Herdr
 
-Run the unit and headless Neovim integration tests with:
+Herdr is the only production transport today. To use it, run Neovim inside a
+Herdr pane with `herdr` on `$PATH` and Herdr's environment variables available
+(`HERDR_ENV=1` and `HERDR_PANE_ID`).
 
-```sh
-./tests/run.sh
-```
+Use `transport = "herdr"` to select it directly. With `transport = "auto"`,
+toss selects Herdr when that environment is available.
 
-The tests do not require Herdr, Ghostty, network access, or an AI coding
-agent. See [DEVELOPMENT.md](DEVELOPMENT.md) for local development commands.
+### Expanding transport support
+
+More transports are planned. A new transport is a registered Lua module that
+implements `available()`, `send(direction, text)`, and `focus(direction)`.
+
+## Development
+
+Contributor setup, local workflows, and test commands live in
+[DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## License
 
