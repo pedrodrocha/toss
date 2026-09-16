@@ -1,4 +1,4 @@
----@class TossFormatter
+---@class TossReferenceFormatter
 ---@field format fun(ctx: TossContext|nil): TossResult<string>
 
 local errors = require("toss.errors")
