@@ -1,21 +1,12 @@
 ---@class TossMappingModule
 ---@field setup fun(configured: boolean|TossMappings|nil, run: fun(direction: TossDirection, origin: TossOrigin): boolean): TossResult<nil>
 
+local definitions = require("toss.mappings.definitions")
 local errors = require("toss.errors")
 local result = require("toss.result")
 local M = {}
 
 local modes = { "n", "x" }
-local directions = {
-  { name = "left", key = "h" },
-  { name = "down", key = "j" },
-  { name = "up", key = "k" },
-  { name = "right", key = "l" },
-}
-local mapping_contexts = {
-  { name = "", origin = "file_buffer", prefix = "<leader>t", description = "Toss " },
-  { name = "yank_", origin = "yank", prefix = "<leader>ty", description = "Toss yank " },
-}
 
 local installed_mappings = {}
 local installed_run
@@ -36,26 +27,23 @@ local function normalize(configured)
   end
 
   local specifications = {}
-  for _, context in ipairs(mapping_contexts) do
-    for _, direction in ipairs(directions) do
-      local name = context.name .. direction.name
-      local key = configured[name]
-      if key == nil then
-        key = context.prefix .. direction.key
-      end
+  for _, definition in ipairs(definitions) do
+    local key = configured[definition.name]
+    if key == nil then
+      key = definition.key
+    end
 
-      if key ~= false and type(key) ~= "string" then
-        return result.err(errors.mapping_key(name))
-      end
-      if type(key) == "string" and key ~= "" then
-        specifications[#specifications + 1] = {
-          name = name,
-          direction = direction.name,
-          origin = context.origin,
-          key = key,
-          description = context.description .. direction.name,
-        }
-      end
+    if key ~= false and type(key) ~= "string" then
+      return result.err(errors.mapping_key(definition.name))
+    end
+    if type(key) == "string" and key ~= "" then
+      specifications[#specifications + 1] = {
+        name = definition.name,
+        direction = definition.direction,
+        origin = definition.origin,
+        key = key,
+        description = definition.description,
+      }
     end
   end
 
