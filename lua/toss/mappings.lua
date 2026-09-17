@@ -1,7 +1,7 @@
 ---@class TossMappingModule
 ---@field setup fun(configured: boolean|TossMappings|nil, run: fun(direction: TossDirection, origin: TossOrigin): boolean): TossResult<nil>
 
-local definitions = require("toss.mappings.definitions")
+local config = require("toss.mappings.config")
 local errors = require("toss.errors")
 local result = require("toss.result")
 local M = {}
@@ -12,43 +12,6 @@ local installed_mappings = {}
 local installed_run
 -- A failed mutation forces the next setup to retry instead of being a no-op.
 local setup_dirty = false
-
----@param configured boolean|TossMappings|nil
----@return TossResult<table[]>
-local function normalize(configured)
-  if configured == nil or configured == false then
-    return result.ok({})
-  end
-
-  if configured == true then
-    configured = {}
-  elseif type(configured) ~= "table" then
-    return result.err(errors.mapping_configuration())
-  end
-
-  local specifications = {}
-  for _, definition in ipairs(definitions) do
-    local key = configured[definition.name]
-    if key == nil then
-      key = definition.key
-    end
-
-    if key ~= false and type(key) ~= "string" then
-      return result.err(errors.mapping_key(definition.name))
-    end
-    if type(key) == "string" and key ~= "" then
-      specifications[#specifications + 1] = {
-        name = definition.name,
-        direction = definition.direction,
-        origin = definition.origin,
-        key = key,
-        description = definition.description,
-      }
-    end
-  end
-
-  return result.ok(specifications)
-end
 
 local function is_owned(mapping, mode)
   if type(vim) ~= "table" or type(vim.fn) ~= "table" or type(vim.fn.maparg) ~= "function" then
@@ -116,12 +79,12 @@ end
 ---@param run fun(direction: TossDirection, origin: TossOrigin): boolean
 ---@return TossResult<nil>
 function M.setup(configured, run)
-  local normalized = normalize(configured)
-  if normalized:is_err() then
-    return normalized
+  local resolved = config.resolve(configured)
+  if resolved:is_err() then
+    return resolved
   end
 
-  local specifications = normalized.value
+  local specifications = resolved.value
   if matches_installed(specifications, run) then
     return result.ok()
   end
