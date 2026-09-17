@@ -68,7 +68,7 @@ local function run(direction, origin)
     origin = "file_buffer"
   end
 
-  local run_result = runner.run(direction, origin, M.config)
+  local run_result = runner.run(direction, origin)
   if run_result:is_err() then
     notify(run_result.error)
   end
@@ -92,6 +92,8 @@ function M.setup(opts)
   for key, value in pairs(opts) do
     M.config[key] = value
   end
+
+  runner.setup(M.config)
 
   local context_result = context.setup()
   if context_result:is_err() then
