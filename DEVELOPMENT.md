@@ -46,6 +46,8 @@ For a dry run without Herdr, select the local transport instead:
 
 The local transport reports the direction and exact payload as an info
 notification. It performs no pane, process, key, or submission operations.
+It is selected explicitly: `transport = "auto"` does not select the local
+transport.
 
 If which-key is installed, the `<leader>t` group is labeled `󰧑 toss`.
 
