@@ -37,6 +37,11 @@ local function always_available()
   return true
 end
 
+local function run_with_config(config, direction, origin)
+  runner.setup(config)
+  return runner.run(direction, origin)
+end
+
 test.describe("toss runner", function()
   test.it("passes the requested context origin through capture", function()
     local captured_origin
@@ -51,9 +56,9 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("right", "yank", {
+      local run_result = run_with_config({
         transport = local_transport,
-      })
+      }, "right", "yank")
 
       test.equal(run_result:is_ok(), true)
     end)
@@ -77,7 +82,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("right", nil, { transport = transport })
+      local run_result = run_with_config({ transport = transport }, "right", nil)
 
       test.equal(run_result:is_ok(), true)
     end)
@@ -108,7 +113,7 @@ test.describe("toss runner", function()
         return result.ok("should not be sent")
       end,
     }, function()
-      local run_result = runner.run("left", nil, { transport = transport })
+      local run_result = run_with_config({ transport = transport }, "left", nil)
 
       test.equal(errors.message(assert_failure(run_result)), "current buffer is not a file")
     end)
@@ -130,7 +135,7 @@ test.describe("toss runner", function()
         return result.err(formatter_error)
       end,
     }, function()
-      local run_result = runner.run("up", nil, {
+      local run_result = run_with_config({
         transport = {
           send = function()
             send_calls = send_calls + 1
@@ -141,7 +146,7 @@ test.describe("toss runner", function()
           end,
           available = always_available,
         },
-      })
+      }, "up", nil)
 
       test.equal(errors.message(assert_failure(run_result)), errors.message(formatter_error))
     end)
@@ -156,7 +161,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("up", nil, {
+      local run_result = run_with_config({
         transport = {
           send = function()
             return result.err(transport_error)
@@ -166,7 +171,7 @@ test.describe("toss runner", function()
           end,
           available = always_available,
         },
-      })
+      }, "up", nil)
 
       test.equal(errors.message(assert_failure(run_result)), errors.message(transport_error))
     end)
@@ -183,7 +188,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("right", nil, {
+      local run_result = run_with_config({
         transport = {
           send = function()
             send_calls = send_calls + 1
@@ -196,7 +201,7 @@ test.describe("toss runner", function()
           end,
           available = always_available,
         },
-      })
+      }, "right", nil)
 
       test.equal(errors.message(assert_failure(run_result)), "transport must return a Result")
     end)
@@ -213,7 +218,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("right", nil, {
+      local run_result = run_with_config({
         transport = {
           send = function()
             error("send exploded")
@@ -223,7 +228,7 @@ test.describe("toss runner", function()
           end,
           available = always_available,
         },
-      })
+      }, "right", nil)
 
       local err = assert_failure(run_result)
       test.contains(errors.message(err), "transport failed: ")
@@ -243,7 +248,7 @@ test.describe("toss runner", function()
         return result.ok("@src/file.lua")
       end,
     }, function()
-      local run_result = runner.run("down", nil, {
+      local run_result = run_with_config({
         transport = {
           send = function(direction, text)
             calls[#calls + 1] = { step = "send", direction = direction, text = text }
@@ -255,7 +260,7 @@ test.describe("toss runner", function()
           end,
           available = always_available,
         },
-      })
+      }, "down", nil)
 
       test.equal(errors.message(assert_failure(run_result)), "transport focus failed: focus exploded")
     end)
@@ -277,7 +282,7 @@ test.describe("toss runner", function()
           return result.ok("@src/file.lua")
         end,
       }, function()
-        local run_result = runner.run("up", nil, {
+        local run_result = run_with_config({
           transport = {
             send = function()
               return result.ok()
@@ -285,7 +290,7 @@ test.describe("toss runner", function()
             focus = focus,
             available = always_available,
           },
-        })
+        }, "up", nil)
 
         focus_error = assert_failure(run_result)
       end)
@@ -314,7 +319,7 @@ test.describe("toss runner", function()
         return result.ok({ kind = "file", path = "src/file.lua" })
       end,
     }, function()
-      local run_result = runner.run("right", nil, {})
+      local run_result = run_with_config({}, "right", nil)
 
       test.equal(errors.message(assert_failure(run_result)), "transport is not configured")
     end)

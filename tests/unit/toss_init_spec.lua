@@ -404,7 +404,7 @@ test.describe("toss directions", function()
 
   test.it("passes an explicit yank origin through the public API", function()
     local_transport.reset()
-    toss.config = { transport = local_transport }
+    toss.setup({ transport = local_transport })
 
     local captured_origin = with_fake_context(function()
       test.equal(toss.left("yank"), true)
@@ -420,7 +420,7 @@ test.describe("toss directions", function()
       return result.err(errors.buffer_not_file())
     end)
 
-    toss.config = {
+    toss.setup({
       transport = {
         send = function()
           send_calls = send_calls + 1
@@ -433,7 +433,7 @@ test.describe("toss directions", function()
           return true
         end,
       },
-    }
+    })
 
     local notifications = with_notifications(function()
       test.equal(toss.left(), false)
@@ -448,7 +448,7 @@ test.describe("toss directions", function()
   end)
 
   test.it("notifies focus failures through the toss error path", function()
-    toss.config = {
+    toss.setup({
       transport = {
         send = function()
           return result.ok()
@@ -460,7 +460,7 @@ test.describe("toss directions", function()
           return true
         end,
       },
-    }
+    })
 
     local notifications = with_notifications(function()
       with_fake_context(function()
@@ -475,6 +475,7 @@ test.describe("toss directions", function()
 
   test.it("fails gracefully when no transport is configured", function()
     toss.config = {}
+    toss.setup({})
 
     local notifications = with_notifications(function()
       test.equal(toss.left(), false)
