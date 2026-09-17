@@ -44,17 +44,18 @@ individual entries.
 
 See [Transport](#transport) for details and planned alternatives.
 
-## Context and payloads
+## Context origins and payloads
 
-In Normal mode, toss sends the whole current file. It does not include the
-cursor line:
+The default `file_buffer` origin captures the current file. In Normal mode,
+toss sends the whole file without the cursor line:
 
 ```text
 @src/domain/user.lua
 ```
 
 In Visual mode, toss sends the inclusive line envelope of the active
-selection:
+selection. The `yank` origin uses this same ranged form when the source file
+and line range can be inferred:
 
 ```text
 @src/domain/user.lua#L42-L67
@@ -63,8 +64,8 @@ selection:
 Characterwise, linewise, and blockwise selections are supported. Columns are
 ignored and reverse selections are normalized to ascending line numbers.
 
-File paths are project-relative when a project root can be detected. An
-absolute path is used when a relative path cannot be produced. Unnamed and
+File-buffer paths are project-relative when a project root can be detected.
+An absolute path is used when a relative path cannot be produced. Unnamed and
 special buffers are rejected with a `toss:` notification.
 
 ## API
@@ -80,16 +81,23 @@ toss.up()
 toss.right()
 ```
 
-Call a direction while a Visual selection is active to toss that selection;
-otherwise the current file is tossed.
+These methods use the `file_buffer` origin by default. Pass `"yank"` to use
+the latest unnamed-register yank instead:
+
+```lua
+toss.right("yank")
+```
+
+For the `file_buffer` origin, call a direction while a Visual selection is
+active to toss that selection; otherwise the whole current file is tossed.
 
 The transport receives the reference as text. Sending does **not** append a
 newline, press Enter, or submit the text.
 
 ## Mappings
 
-When enabled, the default file mappings are installed in Normal and Visual
-mode:
+When enabled, the default file-buffer mappings are installed in Normal and
+Visual mode:
 
 | Mapping | Direction |
 | --- | --- |
@@ -110,9 +118,8 @@ The enabled default set also includes explicit latest-yank mappings:
 | `<leader>tyk` | up |
 | `<leader>tyl` | right |
 
-These use the latest unnamed-register yank, delete, or change. When Neovim
-can identify its file range, it becomes a ranged file reference; otherwise the
-register text is sent literally.
+These use the `yank` origin and follow the file-reference-or-literal-text
+behavior described above.
 
 Mappings can be overridden or disabled individually. Omitted entries keep
 their defaults:
@@ -139,15 +146,6 @@ around Neovim. The core plugin only captures context and formats a text
 reference. The transport receives that reference plus a direction, then uses
 its own pane model to find the adjacent destination and send the text there.
 
-A transport is responsible for:
-
-- deciding whether it is available in the current session;
-- resolving `left`, `down`, `up`, or `right` to a destination pane;
-- sending the exact payload text without adding a newline, pressing Enter, or
-  submitting it;
-- focusing the target pane after a successful toss;
-- reporting unavailable panes, commands, or environments as friendly `toss:`
-  notifications.
 
 ### Herdr
 
@@ -158,10 +156,17 @@ environment variables available (`HERDR_ENV=1` and `HERDR_PANE_ID`).
 Use `transport = "herdr"` to select it directly. With `transport = "auto"`,
 toss selects Herdr when that environment is available.
 
+### Local development transport
+
+Use `transport = "local"` for an explicit dry run without Herdr or another
+pane system. It reports the direction and exact payload as an info
+notification and performs no pane, process, key, or prompt-submission
+operations. `transport = "auto"` never selects the local transport; it only
+selects an available real pane transport.
+
 ### Expanding transport support
 
-More transports are planned. A new transport is a registered Lua module that
-implements `available()`, `send(direction, text)`, and `focus(direction)`.
+More transports are planned. Each transport follows the contract above.
 
 ## Development
 
