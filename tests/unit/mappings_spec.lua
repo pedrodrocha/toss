@@ -3,6 +3,7 @@ package.path = "./lua/?.lua;./lua/?/init.lua;./?.lua;./?/init.lua;" .. package.p
 local test = require("tests.testlib")
 local errors = require("toss.errors")
 local mappings = require("toss.mappings")
+local mapping_config = require("toss.mappings.config")
 
 local function with_vim(fake_vim, callback)
   local previous_vim = _G.vim
@@ -46,6 +47,65 @@ local function only_left(key)
     yank_right = false,
   }
 end
+
+test.describe("mapping configuration", function()
+  test.it("resolves the default surface without Neovim APIs", function()
+    local resolved = mapping_config.resolve(true)
+    local expected = {
+      { name = "left", key = "<leader>th", direction = "left", origin = "file_buffer", description = "Toss left" },
+      { name = "down", key = "<leader>tj", direction = "down", origin = "file_buffer", description = "Toss down" },
+      { name = "up", key = "<leader>tk", direction = "up", origin = "file_buffer", description = "Toss up" },
+      { name = "right", key = "<leader>tl", direction = "right", origin = "file_buffer", description = "Toss right" },
+      { name = "yank_left", key = "<leader>tyh", direction = "left", origin = "yank", description = "Toss yank left" },
+      { name = "yank_down", key = "<leader>tyj", direction = "down", origin = "yank", description = "Toss yank down" },
+      { name = "yank_up", key = "<leader>tyk", direction = "up", origin = "yank", description = "Toss yank up" },
+      {
+        name = "yank_right",
+        key = "<leader>tyl",
+        direction = "right",
+        origin = "yank",
+        description = "Toss yank right",
+      },
+    }
+
+    test.equal(resolved:is_ok(), true)
+    test.equal(#resolved.value, #expected)
+    for index, expected_specification in ipairs(expected) do
+      for field, value in pairs(expected_specification) do
+        test.equal(resolved.value[index][field], value)
+      end
+    end
+  end)
+
+  test.it("applies overrides and disables mappings", function()
+    local resolved = mapping_config.resolve({
+      left = "<leader>tL",
+      down = false,
+      yank_left = false,
+    })
+
+    test.equal(resolved:is_ok(), true)
+    test.equal(#resolved.value, 6)
+    test.equal(resolved.value[1].name, "left")
+    test.equal(resolved.value[1].key, "<leader>tL")
+    test.equal(resolved.value[2].name, "up")
+    test.equal(resolved.value[6].name, "yank_right")
+  end)
+
+  test.it("returns errors for invalid configuration and mapping values", function()
+    ---@type any
+    local invalid_configuration = "enabled"
+    local configuration_result = mapping_config.resolve(invalid_configuration)
+    test.equal(configuration_result:is_err(), true)
+    test.equal(errors.message(configuration_result.error), "mappings must be true or a table")
+
+    ---@type any
+    local invalid_mapping = { left = 42 }
+    local mapping_result = mapping_config.resolve(invalid_mapping)
+    test.equal(mapping_result:is_err(), true)
+    test.contains(errors.message(mapping_result.error), "mapping for left")
+  end)
+end)
 
 test.describe("toss mappings", function()
   test.it("does not register disabled mappings", function()
