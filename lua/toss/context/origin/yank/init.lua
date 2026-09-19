@@ -2,7 +2,7 @@
 ---@field setup fun(): TossResult<nil>
 ---@field capture fun(): TossResult<TossContext>
 
-local observer = require("toss.context.yank.observer")
+local observer = require("toss.context.origin.yank.observer")
 local result = require("toss.result")
 
 local M = {}

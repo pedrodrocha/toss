@@ -3,7 +3,7 @@ vim.opt.rtp:prepend(vim.fn.getcwd())
 
 local test = require("tests.testlib")
 local result = require("toss.result")
-local observer = require("toss.context.yank.observer")
+local observer = require("toss.context.origin.yank.observer")
 local context = require("toss.context")
 local toss = require("toss")
 

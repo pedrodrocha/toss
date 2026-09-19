@@ -27,9 +27,9 @@
 ---@field capture fun(origin: TossOrigin|nil): TossResult<TossContext>
 
 local errors = require("toss.errors")
-local file_buffer = require("toss.context.file_buffer")
+local file_buffer = require("toss.context.origin.file_buffer")
 local result = require("toss.result")
-local yank = require("toss.context.yank")
+local yank = require("toss.context.origin.yank")
 local M = {}
 
 ---@return TossResult<nil>
