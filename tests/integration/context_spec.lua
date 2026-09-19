@@ -76,7 +76,10 @@ test.describe("context capture", function()
     local capture_result = context.capture(invalid_origin)
 
     test.equal(capture_result:is_err(), true)
-    test.equal(errors.message(capture_result.error), 'context origin must be "file_buffer" or "yank": other')
+    test.equal(
+      errors.message(capture_result.error),
+      'context origin must be "file_buffer", "yank", or "telescope_file_browser": other'
+    )
   end)
 
   test.it("captures a normal file relative to the project root", function()

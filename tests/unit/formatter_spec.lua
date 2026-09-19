@@ -54,7 +54,6 @@ test.describe("reference formatter", function()
     test.equal(formatted:is_ok(), true)
     test.equal(formatted.value, text)
   end)
-
 end)
 
 test.describe("formatter facade", function()

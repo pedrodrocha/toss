@@ -91,9 +91,11 @@ local function with_registry(callback)
     callback(fake_vim, calls, mappings, fail)
 
     test.equal(
-      registry.register({}, function()
-        return true
-      end):is_ok(),
+      registry
+        .register({}, function()
+          return true
+        end)
+        :is_ok(),
       true
     )
   end)
