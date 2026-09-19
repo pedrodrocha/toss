@@ -92,7 +92,56 @@ For the `file_buffer` origin, call a direction while a Visual selection is
 active to toss that selection; otherwise the whole current file is tossed.
 
 The transport receives the reference as text. Sending does **not** append a
-newline, press Enter, or submit the text.
+newline, press Enter, or submit the text. Toss is agent-agnostic: it does not
+detect or control a particular coding agent.
+
+## Telescope file-browser integration
+
+Telescope file-browser support is optional and requires Telescope plus
+[`telescope-file-browser.nvim`](https://github.com/nvim-telescope/telescope-file-browser.nvim).
+Neither dependency is loaded or configured by `require("toss").setup()`. To
+enable the integration, add its mappings to your Telescope file-browser
+configuration:
+
+```lua
+local file_browser_mappings =
+  require("toss.integrations.telescope.file_browser").mappings()
+
+require("telescope").setup({
+  extensions = {
+    file_browser = {
+      mappings = file_browser_mappings,
+    },
+  },
+})
+```
+
+The helper adds these mappings in the file-browser picker only:
+
+| Mode | Mapping | Direction |
+| --- | --- | --- |
+| Normal | `<leader>th` | left |
+| Normal | `<leader>tj` | down |
+| Normal | `<leader>tk` | up |
+| Normal | `<leader>tl` | right |
+
+There are no default Toss mappings in Telescope's Insert mode. Prompt
+workflows and terminal key handling vary, so extend or replace the default
+mappings as needed.
+
+The callbacks use the `telescope_file_browser` context origin and do not close
+the picker.
+
+When tossing from file-browser:
+
+- With no multi-selection, Toss sends the entry under the cursor.
+- With one multi-selected entry, Toss sends that entry.
+- With multiple multi-selected entries, Toss sends all selected entries; the
+  cursor entry is not added unless it is selected too.
+- Files are formatted as file references, such as `@README.md`.
+- Directories are formatted with a trailing slash, such as `@notes/`.
+- Multiple entries are sent as one space-separated payload, such as
+  `@README.md @notes/ @lua/toss/init.lua`.
 
 ## Mappings
 
