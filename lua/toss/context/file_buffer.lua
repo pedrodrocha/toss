@@ -2,7 +2,7 @@
 ---@field capture fun(): TossResult<TossFileContext>
 
 local errors = require("toss.errors")
-local project_root = require("toss.context.root")
+local path = require("toss.context.path")
 local result = require("toss.result")
 local M = {}
 
@@ -23,18 +23,6 @@ local function validate_file_path(absolute_path)
   end
 
   return result.ok()
-end
-
----@param root string|nil
----@param absolute_path string
----@return string
-local function resolve_path(root, absolute_path)
-  local relative_path = root and vim.fs.relpath(root, absolute_path)
-  if relative_path and relative_path ~= "" then
-    return relative_path
-  end
-
-  return absolute_path
 end
 
 ---@return boolean
@@ -64,8 +52,7 @@ function M.capture()
     return path_result
   end
 
-  local root = project_root.resolve(0)
-  local path = resolve_path(root, absolute_path)
+  local resolved_path = path.relative_or_absolute(absolute_path, 0)
   local start_line, end_line
 
   if is_visual_mode() then
@@ -74,7 +61,7 @@ function M.capture()
 
   return result.ok({
     kind = "file",
-    path = path,
+    path = resolved_path,
     start_line = start_line,
     end_line = end_line,
   })

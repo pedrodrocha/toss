@@ -4,6 +4,7 @@ vim.opt.rtp:prepend(vim.fn.getcwd())
 local test = require("tests.testlib")
 local errors = require("toss.errors")
 local context = require("toss.context")
+local context_path = require("toss.context.path")
 local project_root = require("toss.context.root")
 
 local root = vim.fn.getcwd()
@@ -191,6 +192,12 @@ test.describe("context capture", function()
     rawset(project_root, "resolve", previous_resolve)
 
     test.equal(value.path, inside_path)
+  end)
+
+  test.it("reports directories and missing paths without throwing", function()
+    test.equal(context_path.is_directory(repository_root), true)
+    test.equal(context_path.is_directory(repository_path), false)
+    test.equal(context_path.is_directory(repository_root .. "/missing"), false)
   end)
 end)
 
