@@ -24,7 +24,7 @@ test.describe("toss errors", function()
     local err = errors.invalid_context_origin("other")
 
     test.equal(err.code, errors.codes.context_origin)
-    test.equal(errors.message(err), 'context origin must be "file_buffer" or "yank": other')
+    test.equal(errors.message(err), 'context origin must be "file_buffer", "yank", or "telescope_file_browser": other')
   end)
 
   test.it("normalizes unsupported levels to errors", function()

@@ -5,6 +5,7 @@ local test = require("tests.testlib")
 local toss_result = require("toss.result")
 local toss = require("toss")
 local local_transport = require("toss.transports.local")
+local telescope_api = require("toss.telescope.api")
 local transports = require("toss.transports")
 
 local fixture_path = vim.fn.getcwd() .. "/.toss-init-fixture"
@@ -23,6 +24,36 @@ local function with_herdr_environment(callback)
   local ok, err = xpcall(callback, debug.traceback)
   vim.env.HERDR_ENV = previous_env.HERDR_ENV
   vim.env.HERDR_PANE_ID = previous_env.HERDR_PANE_ID
+
+  if not ok then
+    error(err, 0)
+  end
+end
+
+local function with_telescope_selection(entries, cursor, callback)
+  local previous_active_picker = telescope_api.active_picker
+  local previous_multi_selection = telescope_api.multi_selection
+  local previous_cursor_entry = telescope_api.cursor_entry
+  local picker = {
+    finder = {
+      _browse_files = function() end,
+    },
+  }
+
+  rawset(telescope_api, "active_picker", function()
+    return toss_result.ok(picker)
+  end)
+  rawset(telescope_api, "multi_selection", function()
+    return toss_result.ok(entries)
+  end)
+  rawset(telescope_api, "cursor_entry", function()
+    return toss_result.ok(cursor)
+  end)
+
+  local ok, err = xpcall(callback, debug.traceback)
+  rawset(telescope_api, "active_picker", previous_active_picker)
+  rawset(telescope_api, "multi_selection", previous_multi_selection)
+  rawset(telescope_api, "cursor_entry", previous_cursor_entry)
 
   if not ok then
     error(err, 0)
@@ -72,6 +103,28 @@ test.describe("toss directions", function()
       test.equal(focus_call.operation, "focus")
       test.equal(focus_call.direction, direction)
     end
+  end)
+
+  test.it("sends the file-browser context through the public API", function()
+    local transport = local_transport
+    transport.reset()
+    toss.config = {}
+    toss.setup({ transport = transport })
+
+    with_telescope_selection({
+      { absolute_path = vim.fn.getcwd() .. "/README.md", is_directory = false },
+      { absolute_path = vim.fn.getcwd() .. "/notes", is_directory = true },
+    }, { absolute_path = vim.fn.getcwd() .. "/.toss-init-fixture", is_directory = false }, function()
+      test.equal(toss.right("telescope_file_browser"), true)
+    end)
+
+    local calls = transport.calls()
+    test.equal(#calls, 2)
+    test.equal(calls[1].operation, "send")
+    test.equal(calls[1].direction, "right")
+    test.equal(calls[1].text, "@README.md @notes/")
+    test.equal(calls[2].operation, "focus")
+    test.equal(calls[2].direction, "right")
   end)
 end)
 

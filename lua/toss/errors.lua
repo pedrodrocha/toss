@@ -48,6 +48,8 @@ M.codes = {
   telescope_picker = "telescope_picker_unavailable",
   telescope_entry = "telescope_entry_unavailable",
   telescope_selection = "telescope_selection_unavailable",
+  telescope_file_browser_picker = "telescope_file_browser_picker_unavailable",
+  telescope_file_browser_entry = "telescope_file_browser_entry_unavailable",
   herdr_environment = "herdr_environment_unavailable",
   herdr_pane = "herdr_pane_unavailable",
   herdr_direction = "invalid_herdr_direction",
@@ -167,7 +169,12 @@ M.invalid_result = function(operation)
 end
 M.context_capture = constructor(M.codes.context_capture, "context capture failed")
 M.invalid_context_origin = function(origin)
-  return defined(M.codes.context_origin, 'context origin must be "file_buffer" or "yank"', "error", origin)
+  return defined(
+    M.codes.context_origin,
+    'context origin must be "file_buffer", "yank", or "telescope_file_browser"',
+    "error",
+    origin
+  )
 end
 M.could_not_capture = constructor(M.codes.context_capture, "could not capture context")
 M.context_formatting = constructor(M.codes.formatting, "context formatting failed")
@@ -194,6 +201,10 @@ M.telescope_unavailable = constructor(M.codes.telescope_unavailable, "Telescope 
 M.telescope_picker = constructor(M.codes.telescope_picker, "no active Telescope picker found", "warn")
 M.telescope_entry = constructor(M.codes.telescope_entry, "no Telescope cursor entry found", "warn")
 M.telescope_selection = constructor(M.codes.telescope_selection, "could not read Telescope multi-selection")
+M.telescope_file_browser_picker =
+  constructor(M.codes.telescope_file_browser_picker, "active Telescope picker is not the file-browser picker", "warn")
+M.telescope_file_browser_entry =
+  constructor(M.codes.telescope_file_browser_entry, "Telescope file-browser entry has no usable absolute path", "warn")
 M.context_range = function(message)
   return defined(M.codes.context_range, message, "error")
 end
