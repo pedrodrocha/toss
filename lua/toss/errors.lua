@@ -44,6 +44,10 @@ M.codes = {
   register_setup = "register_setup_failed",
   register_unavailable = "register_api_unavailable",
   register_read = "register_read_failed",
+  telescope_unavailable = "telescope_unavailable",
+  telescope_picker = "telescope_picker_unavailable",
+  telescope_entry = "telescope_entry_unavailable",
+  telescope_selection = "telescope_selection_unavailable",
   herdr_environment = "herdr_environment_unavailable",
   herdr_pane = "herdr_pane_unavailable",
   herdr_direction = "invalid_herdr_direction",
@@ -186,6 +190,10 @@ M.register_unavailable = constructor(M.codes.register_unavailable, "unnamed regi
 M.register_read = function(message, detail)
   return defined(M.codes.register_read, message, "error", detail)
 end
+M.telescope_unavailable = constructor(M.codes.telescope_unavailable, "Telescope is not available")
+M.telescope_picker = constructor(M.codes.telescope_picker, "no active Telescope picker found", "warn")
+M.telescope_entry = constructor(M.codes.telescope_entry, "no Telescope cursor entry found", "warn")
+M.telescope_selection = constructor(M.codes.telescope_selection, "could not read Telescope multi-selection")
 M.context_range = function(message)
   return defined(M.codes.context_range, message, "error")
 end
