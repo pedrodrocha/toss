@@ -8,7 +8,17 @@
 ---@field kind "text"
 ---@field text string
 
----@alias TossContext TossFileContext|TossTextContext
+---@class TossDirectoryContext
+---@field kind "directory"
+---@field path string
+
+---@alias TossPathContext TossFileContext|TossDirectoryContext
+
+---@class TossPathSetContext
+---@field kind "path_set"
+---@field items TossPathContext[]
+
+---@alias TossContext TossFileContext|TossTextContext|TossDirectoryContext|TossPathSetContext
 
 ---@alias TossOrigin "file_buffer"|"yank"
 
