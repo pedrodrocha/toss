@@ -18,7 +18,21 @@
 ---@field kind "path_set"
 ---@field items TossPathContext[]
 
----@alias TossContext TossFileContext|TossTextContext|TossDirectoryContext|TossPathSetContext
+---@class TossDiagnosticContext
+---@field kind "diagnostic"
+---@field path string
+---@field start_line integer
+---@field end_line integer
+---@field message string
+---@field severity string|nil
+---@field source string|nil
+---@field code string|integer|nil
+
+---@class TossDiagnosticSetContext
+---@field kind "diagnostic_set"
+---@field items TossDiagnosticContext[]
+
+---@alias TossContext TossFileContext|TossTextContext|TossDirectoryContext|TossPathSetContext|TossDiagnosticContext|TossDiagnosticSetContext
 
 ---@alias TossOrigin "file_buffer"|"yank"|"telescope_file_browser"
 
