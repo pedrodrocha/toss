@@ -37,12 +37,12 @@ end
 
 local function with_diagnostic_get(diagnostics, callback)
   local original_get = vim.diagnostic.get
-  vim.diagnostic.get = function()
+  rawset(vim.diagnostic, "get", function()
     return diagnostics
-  end
+  end)
 
   local ok, value = xpcall(callback, debug.traceback)
-  vim.diagnostic.get = original_get
+  rawset(vim.diagnostic, "get", original_get)
   if not ok then
     error(value)
   end
