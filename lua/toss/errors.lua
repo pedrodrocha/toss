@@ -16,7 +16,6 @@
 local M = {}
 
 M.codes = {
-  setup_options = "invalid_setup_options",
   mapping_configuration = "invalid_mapping_configuration",
   mapping_setup = "mapping_setup_failed",
   mapping_teardown = "mapping_teardown_failed",
@@ -36,6 +35,7 @@ M.codes = {
   transport_failure = "transport_failed",
   buffer_not_file = "buffer_not_file",
   buffer_without_path = "buffer_without_path",
+  diagnostics_empty = "diagnostics_empty",
   invalid_context = "invalid_context",
   context_range = "invalid_context_range",
   context_kind = "invalid_context_kind",
@@ -171,7 +171,7 @@ M.context_capture = constructor(M.codes.context_capture, "context capture failed
 M.invalid_context_origin = function(origin)
   return defined(
     M.codes.context_origin,
-    'context origin must be "file_buffer", "yank", or "telescope_file_browser"',
+    'context origin must be "file_buffer", "yank", "telescope_file_browser", or "diagnostic"',
     "error",
     origin
   )
@@ -184,6 +184,7 @@ M.transport_failure = constructor(M.codes.transport_failure, "transport failed")
 M.transport_focus = constructor(M.codes.transport_focus, "transport focus failed")
 M.buffer_not_file = constructor(M.codes.buffer_not_file, "current buffer is not a file", "warn")
 M.buffer_without_path = constructor(M.codes.buffer_without_path, "current buffer has no file path", "warn")
+M.no_diagnostics = constructor(M.codes.diagnostics_empty, "no diagnostics found in current buffer", "warn")
 M.invalid_context = constructor(M.codes.invalid_context, "context must be a table")
 M.invalid_context_kind = function(kind)
   return defined(M.codes.context_kind, 'context kind must be "file" or "text"', "error", kind)

@@ -34,13 +34,14 @@
 
 ---@alias TossContext TossFileContext|TossTextContext|TossDirectoryContext|TossPathSetContext|TossDiagnosticContext|TossDiagnosticSetContext
 
----@alias TossOrigin "file_buffer"|"yank"|"telescope_file_browser"
+---@alias TossOrigin "file_buffer"|"yank"|"telescope_file_browser"|"diagnostic"
 
 ---@class TossContextModule
 ---@field setup fun(): TossResult<nil>
 ---@field capture fun(origin: TossOrigin|nil): TossResult<TossContext>
 
 local errors = require("toss.errors")
+local diagnostic = require("toss.context.origin.diagnostic")
 local file_buffer = require("toss.context.origin.file_buffer")
 local result = require("toss.result")
 local telescope_file_browser = require("toss.context.origin.telescope_file_browser")
@@ -65,6 +66,10 @@ function M.capture(origin)
 
   if origin == "telescope_file_browser" then
     return telescope_file_browser.capture()
+  end
+
+  if origin == "diagnostic" then
+    return diagnostic.capture()
   end
 
   return result.err(errors.invalid_context_origin(origin))

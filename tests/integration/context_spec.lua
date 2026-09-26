@@ -78,7 +78,7 @@ test.describe("context capture", function()
     test.equal(capture_result:is_err(), true)
     test.equal(
       errors.message(capture_result.error),
-      'context origin must be "file_buffer", "yank", or "telescope_file_browser": other'
+      'context origin must be "file_buffer", "yank", "telescope_file_browser", or "diagnostic": other'
     )
   end)
 
