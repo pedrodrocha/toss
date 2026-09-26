@@ -1,6 +1,5 @@
 ---@class TossTelescopeApi
 ---@field active_picker fun(prompt_bufnr: integer|nil): TossResult<table>
----@field selected_entry fun(): TossResult<table>
 ---@field cursor_entry fun(): TossResult<table>
 ---@field multi_selection fun(picker: table|nil): TossResult<table[]>
 
@@ -61,7 +60,7 @@ function M.active_picker(prompt_bufnr)
 end
 
 ---@return TossResult<table>
-function M.selected_entry()
+function M.cursor_entry()
   local state_result = load_action_state()
   if state_result:is_err() then
     return result.err(state_result.error)
@@ -80,8 +79,6 @@ function M.selected_entry()
 
   return result.ok(entry)
 end
-
-M.cursor_entry = M.selected_entry
 
 ---@param picker table|nil
 ---@return TossResult<table[]>
