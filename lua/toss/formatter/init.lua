@@ -1,7 +1,8 @@
----@class TossFormatter
----@field format fun(ctx: TossContext): TossResult<string>
+---@class TossContextFormatter<TContext>
+---@field format fun(ctx: TContext): TossResult<string>
 
 local reference = require("toss.formatter.reference")
+---@type TossContextFormatter<TossContext>
 local M = {}
 
 ---@param ctx TossContext
