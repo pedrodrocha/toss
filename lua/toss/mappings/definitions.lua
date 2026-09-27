@@ -63,4 +63,32 @@ return {
     origin = "yank",
     description = "Toss yank right",
   },
+  {
+    name = "diagnostic_left",
+    key = "<leader>tdh",
+    direction = "left",
+    origin = "diagnostic",
+    description = "Toss diagnostic left",
+  },
+  {
+    name = "diagnostic_down",
+    key = "<leader>tdj",
+    direction = "down",
+    origin = "diagnostic",
+    description = "Toss diagnostic down",
+  },
+  {
+    name = "diagnostic_up",
+    key = "<leader>tdk",
+    direction = "up",
+    origin = "diagnostic",
+    description = "Toss diagnostic up",
+  },
+  {
+    name = "diagnostic_right",
+    key = "<leader>tdl",
+    direction = "right",
+    origin = "diagnostic",
+    description = "Toss diagnostic right",
+  },
 }

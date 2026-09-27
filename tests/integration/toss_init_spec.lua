@@ -70,6 +70,10 @@ local function only_left(key)
     yank_down = false,
     yank_up = false,
     yank_right = false,
+    diagnostic_left = false,
+    diagnostic_down = false,
+    diagnostic_up = false,
+    diagnostic_right = false,
   }
 end
 
@@ -183,17 +187,35 @@ end)
 
 test.describe("toss mappings", function()
   test.it("does not create default mappings", function()
-    test.equal(vim.fn.maparg("<leader>th", "n"), "")
-    test.equal(vim.fn.maparg("<leader>tj", "n"), "")
-    test.equal(vim.fn.maparg("<leader>tk", "n"), "")
-    test.equal(vim.fn.maparg("<leader>tl", "n"), "")
+    local keys = {
+      "<leader>th",
+      "<leader>tj",
+      "<leader>tk",
+      "<leader>tl",
+      "<leader>tdh",
+      "<leader>tdj",
+      "<leader>tdk",
+      "<leader>tdl",
+    }
+    for _, key in ipairs(keys) do
+      test.equal(vim.fn.maparg(key, "n"), "")
+    end
   end)
 
   test.it("creates mappings in Normal and Visual mode when enabled", function()
     toss.config = {}
     toss.setup({ mappings = true })
 
-    local keys = { "<leader>th", "<leader>tj", "<leader>tk", "<leader>tl" }
+    local keys = {
+      "<leader>th",
+      "<leader>tj",
+      "<leader>tk",
+      "<leader>tl",
+      "<leader>tdh",
+      "<leader>tdj",
+      "<leader>tdk",
+      "<leader>tdl",
+    }
     for _, key in ipairs(keys) do
       test.truthy(vim.fn.maparg(key, "n") ~= "")
       test.truthy(vim.fn.maparg(key, "x") ~= "")
@@ -216,7 +238,16 @@ test.describe("toss mappings", function()
     toss.setup({ mappings = true })
     toss.setup({ mappings = false })
 
-    local keys = { "<leader>th", "<leader>tj", "<leader>tk", "<leader>tl" }
+    local keys = {
+      "<leader>th",
+      "<leader>tj",
+      "<leader>tk",
+      "<leader>tl",
+      "<leader>tdh",
+      "<leader>tdj",
+      "<leader>tdk",
+      "<leader>tdl",
+    }
     for _, key in ipairs(keys) do
       test.equal(vim.fn.maparg(key, "n"), "")
       test.equal(vim.fn.maparg(key, "x"), "")

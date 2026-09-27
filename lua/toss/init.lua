@@ -15,6 +15,10 @@ local which_key = require("toss.which_key")
 ---@field yank_down string|false|nil
 ---@field yank_up string|false|nil
 ---@field yank_right string|false|nil
+---@field diagnostic_left string|false|nil
+---@field diagnostic_down string|false|nil
+---@field diagnostic_up string|false|nil
+---@field diagnostic_right string|false|nil
 
 ---@class TossTransport
 ---@field send fun(direction: TossDirection, text: string): TossResult<nil>

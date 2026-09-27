@@ -184,7 +184,7 @@ test.describe("toss setup", function()
     test.equal(#calls, 0)
   end)
 
-  test.it("creates file and explicit yank mappings when enabled", function()
+  test.it("creates file, yank, and diagnostic mappings when enabled", function()
     toss.config = {}
 
     local calls = with_keymaps(function()
@@ -200,6 +200,10 @@ test.describe("toss setup", function()
       { key = "<leader>tyj", desc = "Toss yank down" },
       { key = "<leader>tyk", desc = "Toss yank up" },
       { key = "<leader>tyl", desc = "Toss yank right" },
+      { key = "<leader>tdh", desc = "Toss diagnostic left" },
+      { key = "<leader>tdj", desc = "Toss diagnostic down" },
+      { key = "<leader>tdk", desc = "Toss diagnostic up" },
+      { key = "<leader>tdl", desc = "Toss diagnostic right" },
     }
 
     test.equal(#calls, #expected)
@@ -233,6 +237,7 @@ test.describe("toss setup", function()
       toss.setup({
         mappings = {
           left = "<leader>tL",
+          diagnostic_right = "<leader>tdR",
         },
       })
     end)
@@ -241,6 +246,7 @@ test.describe("toss setup", function()
     test.equal(calls[2].key, "<leader>tj")
     test.equal(calls[3].key, "<leader>tk")
     test.equal(calls[4].key, "<leader>tl")
+    test.equal(calls[12].key, "<leader>tdR")
   end)
 end)
 

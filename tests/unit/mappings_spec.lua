@@ -45,6 +45,10 @@ local function only_left(key)
     yank_down = false,
     yank_up = false,
     yank_right = false,
+    diagnostic_left = false,
+    diagnostic_down = false,
+    diagnostic_up = false,
+    diagnostic_right = false,
   }
 end
 
@@ -66,6 +70,34 @@ test.describe("mapping configuration", function()
         origin = "yank",
         description = "Toss yank right",
       },
+      {
+        name = "diagnostic_left",
+        key = "<leader>tdh",
+        direction = "left",
+        origin = "diagnostic",
+        description = "Toss diagnostic left",
+      },
+      {
+        name = "diagnostic_down",
+        key = "<leader>tdj",
+        direction = "down",
+        origin = "diagnostic",
+        description = "Toss diagnostic down",
+      },
+      {
+        name = "diagnostic_up",
+        key = "<leader>tdk",
+        direction = "up",
+        origin = "diagnostic",
+        description = "Toss diagnostic up",
+      },
+      {
+        name = "diagnostic_right",
+        key = "<leader>tdl",
+        direction = "right",
+        origin = "diagnostic",
+        description = "Toss diagnostic right",
+      },
     }
 
     test.equal(resolved:is_ok(), true)
@@ -82,14 +114,18 @@ test.describe("mapping configuration", function()
       left = "<leader>tL",
       down = false,
       yank_left = false,
+      diagnostic_left = false,
+      diagnostic_right = "<leader>tdR",
     })
 
     test.equal(resolved:is_ok(), true)
-    test.equal(#resolved.value, 6)
+    test.equal(#resolved.value, 9)
     test.equal(resolved.value[1].name, "left")
     test.equal(resolved.value[1].key, "<leader>tL")
     test.equal(resolved.value[2].name, "up")
     test.equal(resolved.value[6].name, "yank_right")
+    test.equal(resolved.value[9].name, "diagnostic_right")
+    test.equal(resolved.value[9].key, "<leader>tdR")
   end)
 
   test.it("returns errors for invalid configuration and mapping values", function()
@@ -126,7 +162,7 @@ test.describe("toss mappings", function()
     test.equal(calls, 0)
   end)
 
-  test.it("registers file and yank mappings from one configuration", function()
+  test.it("registers file, yank, and diagnostic mappings from one configuration", function()
     local calls = {}
     run_calls = {}
 
@@ -156,6 +192,10 @@ test.describe("toss mappings", function()
       { key = "<leader>tyj", direction = "down", origin = "yank", desc = "Toss yank down" },
       { key = "<leader>tyk", direction = "up", origin = "yank", desc = "Toss yank up" },
       { key = "<leader>tyl", direction = "right", origin = "yank", desc = "Toss yank right" },
+      { key = "<leader>tdh", direction = "left", origin = "diagnostic", desc = "Toss diagnostic left" },
+      { key = "<leader>tdj", direction = "down", origin = "diagnostic", desc = "Toss diagnostic down" },
+      { key = "<leader>tdk", direction = "up", origin = "diagnostic", desc = "Toss diagnostic up" },
+      { key = "<leader>tdl", direction = "right", origin = "diagnostic", desc = "Toss diagnostic right" },
     }
 
     test.equal(#calls, #expected)
@@ -191,6 +231,10 @@ test.describe("toss mappings", function()
         yank_down = false,
         yank_up = false,
         yank_right = false,
+        diagnostic_left = false,
+        diagnostic_down = false,
+        diagnostic_up = false,
+        diagnostic_right = false,
       }, run)
 
       test.equal(setup_result:is_ok(), true)
@@ -202,7 +246,7 @@ test.describe("toss mappings", function()
     test.equal(calls[3], "<leader>tl")
   end)
 
-  test.it("uses one mapping configuration for both context origins", function()
+  test.it("uses one mapping configuration for all mapped context origins", function()
     reset_mappings()
     local calls = {}
 
@@ -231,6 +275,10 @@ test.describe("toss mappings", function()
       "<leader>tyH",
       "<leader>tyk",
       "<leader>tyl",
+      "<leader>tdh",
+      "<leader>tdj",
+      "<leader>tdk",
+      "<leader>tdl",
     }
 
     test.equal(#calls, #expected)
@@ -284,7 +332,7 @@ test.describe("toss mappings", function()
       test.equal(mappings.setup(false, run):is_ok(), true)
     end)
 
-    test.equal(#removed, 16)
+    test.equal(#removed, 24)
   end)
 
   test.it("does not repeat an identical setup", function()
