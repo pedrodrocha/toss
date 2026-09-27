@@ -4,7 +4,7 @@
 [![CI](https://github.com/pedrodrocha/toss/actions/workflows/ci.yml/badge.svg)](https://github.com/pedrodrocha/toss/actions/workflows/ci.yml)
 [![Neovim 0.10+](https://img.shields.io/badge/Neovim-0.10%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io/)
 
-`toss.nvim` sends file and selection references from Neovim to an adjacent
+`toss.nvim` sends editor-context references from Neovim to an adjacent
 terminal pane, where a coding agent can use them as context.
 
 The mental model is:
@@ -68,6 +68,44 @@ File-buffer paths are project-relative when a project root can be detected.
 An absolute path is used when a relative path cannot be produced. Unnamed and
 special buffers are rejected with a `toss:` notification.
 
+The `diagnostic` origin captures Neovim diagnostics from the current buffer.
+It reads `vim.diagnostic` state, not LSP clients directly, so diagnostics from
+non-LSP producers work too. The cursor selects the scope:
+
+1. If the cursor line has diagnostics, toss captures all diagnostics on that
+   line.
+2. Otherwise, toss falls back to all diagnostics in the current file.
+3. If the current file has no diagnostics, nothing is sent and a `toss:`
+   notification reports that no diagnostics were found.
+
+A single diagnostic is formatted as a ranged reference plus diagnostic details:
+
+```text
+@src/domain/user.lua#L42-L42 — [error lua_ls undefined-global] Undefined global `vim`
+```
+
+Multiple diagnostics are sent as one payload. Diagnostics for the same file and
+same range share a single ranged header:
+
+```text
+@src/domain/user.lua#L42-L42
+[error lua_ls undefined-global] Undefined global `vim`
+[warning stylua formatting] File is not formatted
+```
+
+When diagnostics are in the same file but on different ranges, the path is
+printed once and each item carries its line range:
+
+```text
+@src/domain/user.lua
+L12-L12 [warning luacheck 211] unused variable `result`
+L42-L43 [error lua_ls syntax] expected `end`
+```
+
+Diagnostic support is intentionally bounded: there is no workspace-wide
+diagnostic capture, severity filtering, diagnostic picker, code-action workflow,
+prompt generation, or agent-specific behavior.
+
 ## API
 
 The public directional API is:
@@ -86,6 +124,16 @@ the latest unnamed-register yank instead:
 
 ```lua
 toss.right("yank")
+```
+
+Pass `"diagnostic"` to toss Neovim diagnostics from the current buffer using
+the cursor-line-first rule described above:
+
+```lua
+toss.left("diagnostic")
+toss.down("diagnostic")
+toss.up("diagnostic")
+toss.right("diagnostic")
 ```
 
 For the `file_buffer` origin, call a direction while a Visual selection is
@@ -170,6 +218,18 @@ The enabled default set also includes explicit latest-yank mappings:
 These use the `yank` origin and follow the file-reference-or-literal-text
 behavior described above.
 
+The enabled default set also includes explicit Neovim diagnostic mappings:
+
+| Mapping | Direction |
+| --- | --- |
+| `<leader>tdh` | left |
+| `<leader>tdj` | down |
+| `<leader>tdk` | up |
+| `<leader>tdl` | right |
+
+These use the `diagnostic` origin. They capture diagnostics on the cursor line
+when present, otherwise all diagnostics in the current file.
+
 Mappings can be overridden or disabled individually. Omitted entries keep
 their defaults:
 
@@ -182,11 +242,27 @@ require("toss").setup({
     up = false,
     right = "<leader>tl",
     yank_left = false,
+    diagnostic_right = "<leader>tD",
+    diagnostic_up = false,
   },
 })
 ```
 
 Set `mappings = false` to remove toss's mappings.
+
+## Manual diagnostic smoke checklist
+
+For a local sanity check after configuring mappings:
+
+- Open a file with at least one Neovim diagnostic and run
+  `:lua require("toss").right("diagnostic")`, or press `<leader>tdl` if default
+  mappings are enabled.
+- Place the cursor on a diagnostic line and confirm only diagnostics on that
+  line are sent.
+- Move to a line without diagnostics and confirm all current-file diagnostics
+  are sent.
+- Clear diagnostics or open a file without diagnostics and confirm toss reports
+  a friendly `toss:` notification without sending a payload.
 
 ## Transport
 
